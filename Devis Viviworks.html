@@ -1,0 +1,1634 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Devis Viviworks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<style>
+:root{
+  --bg:#E9EEF2; --paper:#FFFFFF; --ink:#18232E; --muted:#5B6B7A; --line:#CBD6E0;
+  --blue:#1F5FA8; --blue-ink:#FFFFFF; --blue-soft:#E3EDF8; --warn:#8A5A00; --warn-soft:#FFF3D6;
+  --danger:#B42318; --field:#F7F9FB;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F161D; --paper:#18222C; --ink:#E6EDF3; --muted:#93A4B4; --line:#2C3A47;
+    --blue:#5B9BE6; --blue-ink:#0B1520; --blue-soft:#1A2D42; --warn:#F2C46B; --warn-soft:#33280F;
+    --danger:#FF8A80; --field:#1F2B36; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F161D; --paper:#18222C; --ink:#E6EDF3; --muted:#93A4B4; --line:#2C3A47;
+  --blue:#5B9BE6; --blue-ink:#0B1520; --blue-soft:#1A2D42; --warn:#F2C46B; --warn-soft:#33280F;
+  --danger:#FF8A80; --field:#1F2B36; color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.45;-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
+.bar{max-width:880px;margin:0 auto;padding:12px 16px 0;display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.brand{font-weight:800;font-size:18px;letter-spacing:-.01em}
+.brand span{color:var(--blue)}
+.mode{font-size:12px;color:var(--muted)}
+nav{max-width:880px;margin:0 auto;display:flex;gap:4px;padding:8px 12px 0;overflow-x:auto}
+nav button{border:0;background:none;color:var(--muted);font:inherit;font-weight:600;padding:8px 10px 10px;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+nav button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--blue)}
+main{max-width:880px;margin:0 auto;padding:16px 12px 180px}
+section.tab{display:none}
+section.tab.on{display:block}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px}
+h2{font-size:16px;margin:0 0 12px;font-weight:700}
+h3{font-size:14px;margin:14px 0 8px;font-weight:700}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid .full{grid-column:1/-1}
+@media (max-width:560px){.grid{grid-template-columns:1fr}}
+label{display:block;font-size:12.5px;color:var(--muted);font-weight:500}
+input,select,textarea{width:100%;margin-top:4px;font:inherit;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:7px;padding:9px 10px}
+textarea{min-height:70px;resize:vertical}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+.seg{display:grid;grid-template-columns:1fr 1fr;border:2px solid var(--blue);border-radius:10px;overflow:hidden;margin-bottom:12px}
+.seg button{border:0;font:inherit;font-weight:700;padding:12px;background:var(--paper);color:var(--blue);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--blue);color:var(--blue-ink)}
+.notice{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:10px 12px;font-size:13.5px;margin-bottom:12px}
+.line{border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:8px;padding:12px;margin-bottom:10px;background:var(--paper)}
+.line .row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px}
+.line .row2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px}
+.line .head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.line .tot{font-weight:700;font-variant-numeric:tabular-nums}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font:inherit;font-weight:600;padding:10px 14px;border-radius:8px;cursor:pointer}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:var(--blue-ink)}
+.btn.ghost{border-color:transparent;background:none;color:var(--muted);padding:6px 8px}
+.btn.danger{color:var(--danger)}
+.btn:disabled{opacity:.5;cursor:default}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.totals{font-variant-numeric:tabular-nums}
+.totals div{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed var(--line)}
+.totals .ttc{font-weight:800;font-size:18px;color:var(--blue);border-bottom:0;padding-top:8px}
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--paper);border-top:1px solid var(--line);padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px))}
+.dock .in{max-width:880px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.dock .btns{max-width:880px;margin:8px auto 0;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.dock .btns .btn{padding:10px 4px;font-size:14px}
+.dock[hidden]{display:none}
+.savestate{font-size:12.5px;color:var(--muted);text-align:right}
+.savestate.dirty{color:var(--warn)}
+.savestate.ok{color:#2E7D4F}
+.dock .sum{font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted)}
+.dock .sum b{display:block;font-size:17px;color:var(--ink)}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--paper)}
+.item .meta{font-size:12.5px;color:var(--muted)}
+.tag{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 7px;border-radius:5px;background:var(--blue-soft);color:var(--blue);margin-left:6px}
+.tag.part{background:var(--warn-soft);color:var(--warn)}
+.chk{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);color:var(--ink);font-size:14px}
+.chk input{width:20px;height:20px;margin:0;flex:none}
+.empty{color:var(--muted);font-size:14px;padding:6px 0}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chips button{border:1px solid var(--blue);background:var(--paper);color:var(--blue);font:inherit;font-weight:700;font-size:13px;padding:6px 10px;border-radius:999px;cursor:pointer;font-variant-numeric:tabular-nums}
+.chips button[aria-pressed="true"]{background:var(--blue);color:var(--blue-ink)}
+.buy{margin-top:10px;padding:10px;border-radius:8px;background:var(--blue-soft)}
+.buyinfo{font-size:12.5px;color:var(--muted);margin-top:8px;font-variant-numeric:tabular-nums}
+.buyinfo b{color:var(--ink)}
+.globalmarge{margin:-4px 0 12px}
+.totals .private{color:var(--muted)}
+.tvapick{margin-bottom:12px}
+.tvapick .chips{margin-top:6px}
+.tvapick .chips button{font-size:15px;padding:8px 16px}
+.suivihead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{border-radius:8px;padding:10px;border:1px solid var(--line);font-variant-numeric:tabular-nums}
+.stat .n{font-size:26px;font-weight:800;line-height:1.1}
+.stat .l{font-size:12.5px;color:var(--muted);font-weight:600}
+.stat .a{font-size:13px;margin-top:4px}
+.stat.acc{border-color:#2E7D4F}.stat.acc .n{color:#2E7D4F}
+.stat.ref{border-color:var(--danger)}.stat.ref .n{color:var(--danger)}
+.stat.enc .n{color:var(--blue)}
+.margebox{margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--blue-soft);font-variant-numeric:tabular-nums;font-size:14px}
+.margebox div{display:flex;justify-content:space-between;padding:2px 0}
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.filters button{border:1px solid var(--line);background:var(--paper);color:var(--ink);font:inherit;font-weight:600;font-size:13px;padding:6px 12px;border-radius:999px;cursor:pointer}
+.filters button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.st{font-size:11.5px;font-weight:700;padding:2px 7px;border-radius:5px;margin-left:6px}
+.st.accepte{background:#DDF3E6;color:#1E6B40}.st.refuse{background:#FBE1DE;color:#9B1C12}.st.en_cours{background:var(--blue-soft);color:var(--blue)}
+.cli .det{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
+.cli .det .meta{display:block}
+.cli{display:block}
+.pickers{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media (max-width:560px){.pickers{grid-template-columns:1fr}}
+.filebtn{position:relative;overflow:hidden;text-align:center}
+.filebtn input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;margin:0;padding:0;font-size:0}
+.filebtn.busy{opacity:.55;pointer-events:none}
+.pastezone{margin-top:10px;border:2px dashed var(--line);border-radius:10px;padding:14px 12px;text-align:center;color:var(--muted);font-size:13.5px;background:var(--field);min-height:56px;outline:none;-webkit-user-select:text;user-select:text}
+.pastezone:focus{border-color:var(--blue);color:var(--ink)}
+.pastezone.drag{border-color:var(--blue);background:var(--blue-soft)}
+.status-err{color:var(--danger)!important}
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.sw{display:flex;flex-direction:column;align-items:center;gap:5px;border:2px solid transparent;background:none;border-radius:10px;padding:6px 4px;cursor:pointer;font:inherit;font-size:12px;color:var(--ink)}
+.sw i{display:block;width:38px;height:38px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}
+.sw[aria-checked="true"]{border-color:var(--ink);font-weight:700}
+.custom{display:flex;align-items:center;gap:10px;margin-top:10px}
+.custom input{width:56px;height:38px;padding:2px;margin:0}
+.order{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-direction:column;gap:8px;counter-reset:o}
+.order li{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--paper);counter-increment:o}
+.order li::before{content:counter(o);flex:none;width:24px;height:24px;border-radius:50%;background:var(--blue-soft);color:var(--blue);font-weight:800;font-size:13px;display:grid;place-items:center}
+.order li .nm{flex:1;min-width:0;font-size:14px;overflow-wrap:anywhere}
+.order li .nm small{display:block;color:var(--muted)}
+.order li.last{border-color:var(--blue);border-width:2px}
+.order li.last::before{background:var(--blue);color:var(--blue-ink)}
+.order .btn{padding:6px 9px}
+.addrow{display:flex;gap:8px;align-items:center}
+.addrow select{margin:0;flex:1}
+.viewer{position:fixed;inset:0;z-index:40;background:rgba(10,16,22,.88);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.viewer[hidden]{display:none}
+.vbar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;background:var(--paper);border-bottom:1px solid var(--line)}
+.vpages{flex:1;overflow:auto;padding:14px 10px 30px;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
+.vpages canvas{display:block;margin:0 auto 12px;height:auto;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.35);border-radius:2px}
+.zbar{display:flex;justify-content:center;gap:8px;padding:8px;background:var(--paper);border-bottom:1px solid var(--line)}
+.zbar .btn{min-width:52px;font-size:17px;padding:6px 12px;font-variant-numeric:tabular-nums}
+.zbar #zReset{font-size:14px;min-width:80px}
+.vpages p{color:#fff}
+.st.oui{background:#DDF3E6;color:#1E6B40}.st.non{background:var(--warn-soft);color:var(--warn)}
+.cli .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.exp{border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--paper)}
+.exp .row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px}
+.exp .top{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px}
+.exp .foot{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:12.5px;color:var(--muted)}
+.exp img{max-height:46px;border-radius:4px;cursor:pointer}
+@media (max-width:560px){.stats{grid-template-columns:1fr 1fr 1fr}.stat .n{font-size:22px}.exp .top{grid-template-columns:1fr 1fr}}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(130px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:8px;font-weight:600;z-index:20;max-width:90vw;display:none}
+.logo-prev{max-height:60px;max-width:180px;display:block;margin-top:8px;background:#fff;border-radius:4px}
+.muted{color:var(--muted);font-size:13px}
+@media (prefers-reduced-motion:no-preference){.toast{transition:opacity .2s}}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar"><div class="brand">Devis <span>Viviworks</span></div><div class="mode" id="modeLbl">Chargement…</div></div>
+  <nav role="tablist">
+    <button role="tab" data-tab="devis" aria-selected="true">Devis</button>
+    <button role="tab" data-tab="tout" aria-selected="false">Suivi</button>
+    <button role="tab" data-tab="installation" aria-selected="false">Installation</button>
+    <button role="tab" data-tab="maintenance" aria-selected="false">Maintenance</button>
+    <button role="tab" data-tab="depannage" aria-selected="false">Dépannage</button>
+    <button role="tab" data-tab="envoi" aria-selected="false">Envoyer</button>
+    <button role="tab" data-tab="factures" aria-selected="false">Facturation</button>
+    <button role="tab" data-tab="clients" aria-selected="false">Clients</button>
+    <button role="tab" data-tab="fiches" aria-selected="false">Fiches marques</button>
+    <button role="tab" data-tab="reglages" aria-selected="false">Réglages</button>
+  </nav>
+</header>
+
+<main>
+<!-- ============ DEVIS ============ -->
+<section class="tab on" id="tab-devis">
+  <div class="card">
+    <h2>Client</h2>
+    <label style="margin-bottom:12px">Reprendre un client enregistré
+      <select id="cPick"><option value="">Nouveau client</option></select>
+    </label>
+    <h3 style="margin-top:4px">Type de client</h3>
+    <div class="seg">
+      <button type="button" id="tParticulier" aria-pressed="true">Particulier</button>
+      <button type="button" id="tPro" aria-pressed="false">Professionnel</button>
+    </div>
+    <div class="tvapick">
+      <strong>TVA du devis</strong>
+      <div class="chips" id="tvaChips"></div>
+      <p class="muted" id="tvaHint" style="margin:6px 0 0"></p>
+    </div>
+    <div class="notice" id="partNotice">Client particulier : le PDF inclut automatiquement le droit de rétractation de 14 jours, la page d'information légale et le formulaire de rétractation. L'acompte devient exigible 7 jours après signature.</div>
+    <div class="grid">
+      <label class="full" id="lblSociete" hidden>Société<input id="cSociete" autocomplete="organization"></label>
+      <label class="full">Nom du client<input id="cNom" autocomplete="name"></label>
+      <label class="full">Adresse<input id="cAdresse" autocomplete="street-address"></label>
+      <label>Code postal<input id="cCp" inputmode="numeric"></label>
+      <label>Ville<input id="cVille"></label>
+      <label>Téléphone<input id="cTel" type="tel"></label>
+      <label>E-mail<input id="cEmail" type="email"></label>
+      <label class="full" id="lblSiret" hidden>SIRET / N° TVA<input id="cSiret"></label>
+      <label class="full">Lieu d'intervention (si différent)<input id="cLieu"></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Devis</h2>
+    <div class="grid">
+      <label>Numéro<input id="dNum"></label>
+      <label>Date<input id="dDate" type="date"></label>
+      <label class="full">Objet<input id="dObjet" placeholder="Ex. Fourniture et pose d'une climatisation réversible"></label>
+      <label>Type d'intervention
+        <select id="dCat"><option value="installation">Installation</option><option value="maintenance">Maintenance</option><option value="depannage">Dépannage</option></select>
+      </label>
+      <label>Statut
+        <select id="dStatut"><option value="en_cours">En cours</option><option value="accepte">Accepté</option><option value="refuse">Refusé</option></select>
+      </label>
+      <label>Acompte à la commande (%)<input id="dAcompte" type="number" min="0" max="100" step="1"></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Offre fournisseur en photo</h2>
+    <p class="muted" style="margin-top:-6px">Prends en photo l'offre de prix du fournisseur : les articles et leurs prix sont ajoutés comme lignes, avec la marge choisie.</p>
+    <div class="grid">
+      <label>Marge à appliquer
+        <select id="photoMarge"></select>
+      </label>
+      <label>Les prix de l'offre sont en
+        <select id="photoMode"><option value="auto">Détection auto</option><option value="TTC">TTC</option><option value="HT">HT</option></select>
+      </label>
+    </div>
+<div style="margin-top:12px"></div>
+    <div class="pickers">
+      <label class="btn primary filebtn">Prendre une photo<input type="file" accept="image/*" capture="environment" data-target="offre"></label>
+      <label class="btn filebtn">Galerie photos<input type="file" accept="image/*" data-target="offre"></label>
+      <label class="btn filebtn">WhatsApp / Fichiers / PDF<input type="file" accept="image/*,application/pdf,.pdf" data-target="offre"></label>
+    </div>
+    <div class="pastezone" contenteditable="true" spellcheck="false" inputmode="none" data-paste="offre" role="textbox" aria-label="Zone pour coller une image">Si la galerie ne s'ouvre pas : copie la photo dans WhatsApp ou la galerie, puis <b>appuie longtemps ici → Coller</b>.</div>
+    <button class="btn" type="button" data-clip="offre" style="margin-top:8px">Coller l'image copiée</button>
+    <p class="muted" id="photoStatus" style="margin:8px 0 0"></p>
+  </div>
+
+  <div class="card">
+    <h2>Lignes du devis</h2>
+    <div class="globalmarge"><span class="muted">Marge sur toutes les lignes avec prix d'achat :</span>
+      <div class="chips" id="allMarge"></div>
+    </div>
+    <div id="lines"></div>
+    <div class="actions">
+      <button class="btn" type="button" id="addLine">+ Ajouter une ligne</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Couleur du devis</h2>
+    <div class="swatches" id="swatches" role="radiogroup" aria-label="Couleur du devis"></div>
+    <label class="custom">Autre couleur<input type="color" id="colorCustom"></label>
+  </div>
+
+  <div class="card">
+    <h2>Fiches constructeurs à joindre</h2>
+    <p class="muted" style="margin-top:-6px">Les PDF cochés sont placés avant le devis : le devis est toujours en dernier. L'ordre se règle dans l'onglet Envoyer.</p>
+    <div id="ficheChoice"></div>
+  </div>
+
+  <div class="card">
+    <h2>Notes sur le devis</h2>
+    <textarea id="dNotes" placeholder="Remarques visibles sur le devis (facultatif)"></textarea>
+  </div>
+
+  <div class="card">
+    <h2>Dépenses du projet</h2>
+    <p class="muted" style="margin-top:-6px">Scanne tes factures (matériel, restaurant, carburant, outillage…) pour connaître ta marge réelle sur ce chantier. Elles n'apparaissent jamais sur le devis client.</p>
+    <div class="pickers">
+      <label class="btn primary filebtn">Prendre une photo<input type="file" accept="image/*" capture="environment" data-target="scan"></label>
+      <label class="btn filebtn">Galerie photos<input type="file" accept="image/*" data-target="scan"></label>
+      <label class="btn filebtn">WhatsApp / Fichiers / PDF<input type="file" accept="image/*,application/pdf,.pdf" data-target="scan"></label>
+    </div>
+    <div class="pastezone" contenteditable="true" spellcheck="false" inputmode="none" data-paste="scan" role="textbox" aria-label="Zone pour coller une image">Si la galerie ne s'ouvre pas : copie la photo dans WhatsApp ou la galerie, puis <b>appuie longtemps ici → Coller</b>.</div>
+    <button class="btn" type="button" data-clip="scan" style="margin-top:8px">Coller l'image copiée</button>
+    <div class="actions" style="margin-top:8px"><button class="btn" type="button" id="expAdd">Ajouter à la main</button></div>
+    <p class="muted" id="scanStatus" style="margin:8px 0 0"></p>
+    <div id="expList" class="list" style="margin-top:12px"></div>
+  </div>
+
+  <div class="card totals" id="totals"></div>
+
+  <div class="card" id="factCard">
+    <h2>Facture</h2>
+    <div id="factEmpty">
+      <p class="muted" style="margin-top:-6px">La facture est créée automatiquement dès que le devis passe en « Accepté ».</p>
+      <button class="btn primary" type="button" id="factAccept">Devis accepté : créer la facture</button>
+    </div>
+    <div id="factBody" hidden>
+      <div class="grid">
+        <label>N° de facture<input id="fNum" readonly></label>
+        <label>Date de facture<input id="fDate" type="date"></label>
+        <label>Date des travaux<input id="fTravaux" type="date"></label>
+        <label>Échéance de paiement<input id="fEcheance" type="date"></label>
+        <label>Acompte déjà versé (TTC)<input id="fAcompte" inputmode="decimal" placeholder="0,00"></label>
+        <label>Paiement
+          <select id="fPayee"><option value="non">À encaisser</option><option value="oui">Payée</option></select>
+        </label>
+      </div>
+      <div class="margebox" id="factNet"></div>
+      <div class="actions" style="margin-top:12px">
+        <button class="btn" type="button" id="factPreview">Aperçu de la facture</button>
+        <button class="btn primary" type="button" id="factPdf">Télécharger la facture</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn" type="button" id="newDevis">Nouveau devis</button>
+  </div>
+</section>
+
+<!-- ============ ENVOI ============ -->
+<section class="tab" id="tab-envoi">
+  <div class="card">
+    <h2>Devis à envoyer</h2>
+    <select id="eDevis" aria-label="Devis à envoyer"></select>
+    <p class="muted" id="eInfo" style="margin:8px 0 0"></p>
+  </div>
+  <div class="card">
+    <h2>Ordre du dossier PDF</h2>
+    <p class="muted" style="margin-top:-6px">Les fiches constructeurs d'abord, dans l'ordre ci-dessous. Le devis est toujours la dernière partie.</p>
+    <ol class="order" id="eOrder"></ol>
+    <div class="addrow">
+      <select id="eAddSel" aria-label="Fiche constructeur à ajouter"></select>
+      <button class="btn" type="button" id="eAdd">Ajouter</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Message</h2>
+    <div class="grid">
+      <label class="full">Destinataire<input id="eTo" type="email" placeholder="e-mail du client"></label>
+      <label class="full">Objet<input id="eSubject"></label>
+      <label class="full">Message<textarea id="eBody" style="min-height:150px"></textarea></label>
+    </div>
+  </div>
+  <div class="card">
+    <div class="actions">
+      <button class="btn" type="button" id="ePreview">Aperçu du dossier</button>
+      <button class="btn" type="button" id="eDownload">Télécharger le dossier</button>
+      <button class="btn primary" type="button" id="eSend">Envoyer</button>
+    </div>
+    <p class="muted" id="eStatus" style="margin:10px 0 0"></p>
+  </div>
+</section>
+
+<!-- ============ FACTURATION ============ -->
+<section class="tab" id="tab-factures">
+  <div class="card">
+    <h2>Facturation</h2>
+    <div class="stats" id="factStats"></div>
+  </div>
+  <div class="card">
+    <div class="filters" role="group" aria-label="Filtrer les factures" id="factFilter">
+      <button type="button" data-ff="" aria-pressed="true">Toutes</button>
+      <button type="button" data-ff="non" aria-pressed="false">À encaisser</button>
+      <button type="button" data-ff="oui" aria-pressed="false">Payées</button>
+    </div>
+    <div id="factList" class="list"></div>
+  </div>
+</section>
+
+<!-- ============ CLIENTS ============ -->
+<section class="tab" id="tab-clients">
+  <div class="card">
+    <h2>Base clients</h2>
+    <div class="stats" id="cliStats"></div>
+  </div>
+  <div class="card">
+    <label>Rechercher (nom, ville, téléphone, e-mail)<input id="cliSearch" type="search" autocomplete="off"></label>
+    <div class="filters" role="group" aria-label="Filtrer les clients" id="cliFilter" style="margin-top:12px">
+      <button type="button" data-cf="" aria-pressed="true">Tous</button>
+      <button type="button" data-cf="accepte" aria-pressed="false">Acceptés</button>
+      <button type="button" data-cf="en_cours" aria-pressed="false">En cours</button>
+      <button type="button" data-cf="refuse" aria-pressed="false">Refusés</button>
+    </div>
+    <div id="cliList" class="list"></div>
+  </div>
+</section>
+
+<!-- ============ FICHES ============ -->
+<section class="tab" id="tab-fiches">
+  <div class="card">
+    <h2>Ajouter des fiches PDF</h2>
+    <div class="grid">
+      <label>Marque<input id="fMarque" list="marquesList" placeholder="Daikin, Mitsubishi, Atlantic…"></label>
+      <label>Fichiers PDF<input id="fFiles" type="file" accept="application/pdf,.pdf" multiple></label>
+    </div>
+    <datalist id="marquesList"></datalist>
+    <div class="actions" style="margin-top:12px"><button class="btn primary" type="button" id="addFiches">Ajouter à la bibliothèque</button></div>
+  </div>
+  <div class="card">
+    <h2>Bibliothèque</h2>
+    <div id="ficheLib" class="list"></div>
+  </div>
+</section>
+
+<!-- ============ HISTORIQUE ============ -->
+<section class="tab" id="tab-suivi">
+  <div class="card">
+    <div class="suivihead"><h2 id="suiviTitle" style="margin:0">Suivi des devis</h2><button class="btn primary" type="button" id="suiviNew">Nouveau devis</button></div>
+    <div class="stats" id="stats"></div>
+  </div>
+  <div class="card">
+    <div class="filters" role="group" aria-label="Filtrer par statut" id="statFilter">
+      <button type="button" data-st="" aria-pressed="true">Tous</button>
+      <button type="button" data-st="en_cours" aria-pressed="false">En cours</button>
+      <button type="button" data-st="accepte" aria-pressed="false">Acceptés</button>
+      <button type="button" data-st="refuse" aria-pressed="false">Refusés</button>
+    </div>
+    <div id="histo" class="list"></div>
+  </div>
+</section>
+
+<!-- ============ REGLAGES ============ -->
+<section class="tab" id="tab-reglages">
+  <div class="card">
+    <h2>Entreprise</h2>
+    <div class="grid">
+      <label class="full">Raison sociale<input id="sNom"></label>
+      <label class="full">Adresse<input id="sAdresse"></label>
+      <label>Pays / ville<input id="sVille"></label>
+      <label>N° d'immatriculation<input id="sNumero"></label>
+      <label>E-mail<input id="sEmail" type="email"></label>
+      <label>Téléphone<input id="sTel" type="tel"></label>
+      <label class="full">Signataire<input id="sSignataire"></label>
+      <label class="full">Logo (PNG ou JPG)<input id="sLogoFile" type="file" accept="image/png,image/jpeg"></label>
+      <div class="full"><img id="sLogoPrev" class="logo-prev" alt="Logo" hidden><button class="btn ghost danger" type="button" id="sLogoDel" hidden>Retirer le logo</button></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Paiement</h2>
+    <div class="grid">
+      <label class="full">Titulaire du compte<input id="sTitulaire"></label>
+      <label class="full">IBAN<input id="sIban"></label>
+      <label>BIC<input id="sBic"></label>
+      <label>Acompte par défaut (%)<input id="sAcompte" type="number" min="0" max="100"></label>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Conditions</h2>
+    <div class="grid">
+      <label>Validité du devis (jours)<input id="sValidite" type="number" min="1"></label>
+      <label>Garantie<input id="sGarantie"></label>
+      <label class="full">Médiateur de la consommation (obligatoire pour les particuliers)<input id="sMediateur" placeholder="Nom, adresse et site du médiateur"></label>
+      <label class="full">Conditions supplémentaires (une par ligne)<textarea id="sConditions"></textarea></label>
+    </div>
+    <div class="actions" style="margin-top:12px"><button class="btn primary" type="button" id="saveSettings">Enregistrer les réglages</button></div>
+  </div>
+</section>
+</main>
+
+<div class="dock" id="dock"><div class="in">
+  <div class="sum" id="dockSum">Total TTC<b>0,00 €</b></div>
+  <div class="savestate" id="saveState" aria-live="polite">Pas encore enregistré</div>
+</div>
+<div class="btns">
+  <button class="btn" type="button" id="saveDevis">Enregistrer</button>
+  <button class="btn danger" type="button" id="delDevis">Effacer</button>
+  <button class="btn" type="button" id="previewPdf">Aperçu</button>
+  <button class="btn primary" type="button" id="exportPdf">PDF</button>
+</div></div>
+<div class="toast" id="toast" role="status"></div>
+<div class="viewer" id="viewer" hidden role="dialog" aria-modal="true" aria-labelledby="viewerTitle">
+  <div class="vbar"><strong id="viewerTitle">Aperçu</strong>
+    <div class="actions" style="flex-wrap:nowrap"><button class="btn primary" type="button" id="viewerDl">Télécharger</button><button class="btn" type="button" id="viewerClose">Fermer</button></div></div>
+  <div class="zbar" role="group" aria-label="Zoom">
+    <button class="btn" type="button" id="zOut" aria-label="Dézoomer">−</button>
+    <button class="btn" type="button" id="zReset" aria-label="Taille normale"><span id="zLbl">100 %</span></button>
+    <button class="btn" type="button" id="zIn" aria-label="Zoomer">+</button>
+  </div>
+  <div class="vpages" id="viewerPages"></div>
+</div>
+
+<script>
+(() => {
+/* ---------- utilitaires ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const num = v => { const n = parseFloat(String(v).replace(",", ".")); return isFinite(n) ? n : 0; };
+const eur = n => { const neg = n < 0; const s = Math.abs(Math.round(n * 100) / 100).toFixed(2); const [i, d] = s.split("."); return (neg ? "-" : "") + i.replace(/\B(?=(\d{3})+(?!\d))/g, " ") + "," + d + " €"; };
+const pct = n => String(n).replace(".", ",") + " %";
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const today = () => new Date().toISOString().slice(0, 10);
+const frDate = iso => { if (!iso) return ""; const [y, m, d] = iso.split("-"); return `${d}/${m}/${y}`; };
+const addDays = (iso, n) => { const d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+let toastT;
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(toastT); toastT = setTimeout(() => t.style.display = "none", 3200); }
+
+/* ---------- valeurs par défaut ---------- */
+const DEFAULT_SETTINGS = {
+  nom: "VIVIWORKS", adresse: "24-26 Arcadia Ave", ville: "London N3 2JU, Royaume-Uni",
+  numero: "Company No 16296986", email: "viviworks95@gmail.com", tel: "", signataire: "Aiman Bellara",
+  titulaire: "VIVIWORKS", iban: "BE91 9053 3391 0076", bic: "TRWIBEB1XXX", acompte: 50, validite: 30,
+  garantie: "1 an", mediateur: "",
+  conditions: "Tout travail non prévu au présent devis fera l'objet d'un devis complémentaire.\nMajorations dimanche et jours fériés non incluses.",
+  logo: "", logoW: 0, logoH: 0
+};
+let settings = { ...DEFAULT_SETTINGS };
+
+/* ---------- stockage : base claude.ai si dispo, sinon navigateur ---------- */
+const IDB = {
+  _db: null,
+  open() { if (this._db) return Promise.resolve(this._db); return new Promise((res, rej) => { const r = indexedDB.open("devis-viviworks", 1); r.onupgradeneeded = () => r.result.createObjectStore("kv"); r.onsuccess = () => { this._db = r.result; res(r.result); }; r.onerror = () => rej(r.error); }); },
+  async tx(mode, fn) { const db = await this.open(); return new Promise((res, rej) => { const t = db.transaction("kv", mode); const st = t.objectStore("kv"); const out = fn(st); t.oncomplete = () => res(out && out.result !== undefined ? out.result : undefined); t.onerror = () => rej(t.error); }); },
+  get(k) { return this.tx("readonly", st => st.get(k)); },
+  set(k, v) { return this.tx("readwrite", st => st.put(v, k)); },
+  del(k) { return this.tx("readwrite", st => st.delete(k)); },
+  async all(prefix) { const db = await this.open(); return new Promise((res, rej) => { const out = []; const t = db.transaction("kv", "readonly"); const c = t.objectStore("kv").openCursor(); c.onsuccess = () => { const cur = c.result; if (cur) { if (String(cur.key).startsWith(prefix)) out.push(cur.value); cur.continue(); } else res(out); }; c.onerror = () => rej(c.error); }); }
+};
+const Store = { db: null, assets: null, downloads: null, sample: null };
+
+async function useCap(name) {
+  try { if (!window.claude || !window.claude.use) return null; return await Promise.race([window.claude.use(name), new Promise(r => setTimeout(() => r(null), 10000))]); } catch { return null; }
+}
+async function safe(fn, fallback) { try { return await fn(); } catch (e) { console.error(e); return fallback; } }
+
+const S = {
+  async getSettings() {
+    if (Store.db) { const s = await safe(() => Store.db.doc("reglages/entreprise").get(), null); return s && s.exists ? s.data() : null; }
+    return safe(() => IDB.get("settings"), null);
+  },
+  async saveSettings(v) { if (Store.db) return Store.db.doc("reglages/entreprise").set(v); return IDB.set("settings", v); },
+  async listDevis() {
+    if (Store.db) { const q = await safe(() => Store.db.collection("devis").get(), null); return q ? q.docs.map(d => d.data()) : []; }
+    return safe(() => IDB.all("devis:"), []);
+  },
+  async saveDevis(d) { if (Store.db) return Store.db.collection("devis").doc(d.id).set(JSON.parse(JSON.stringify(d))); return IDB.set("devis:" + d.id, d); },
+  async delDevis(id) { if (Store.db) return Store.db.collection("devis").doc(id).delete(); return IDB.del("devis:" + id); },
+  async listClients() {
+    if (Store.db) { const q = await safe(() => Store.db.collection("clients").get(), null); return q ? q.docs.map(d => d.data()) : []; }
+    return safe(() => IDB.all("client:"), []);
+  },
+  async saveClient(c) { if (Store.db) return Store.db.collection("clients").doc(c.id).set(JSON.parse(JSON.stringify(c))); return IDB.set("client:" + c.id, c); },
+  async delClient(id) { if (Store.db) return Store.db.collection("clients").doc(id).delete(); return IDB.del("client:" + id); },
+  fichesCloud() { return !!(Store.db && Store.assets); },
+  async listFiches() {
+    if (this.fichesCloud()) { const q = await safe(() => Store.db.collection("fiches").get(), null); return q ? q.docs.map(d => d.data()) : []; }
+    const all = await safe(() => IDB.all("fiche:"), []); return all.map(({ blob, ...m }) => m);
+  },
+  async addFiche(file, marque) {
+    const id = uid(); const meta = { id, marque, nom: file.name, taille: file.size, ajoute: Date.now() };
+    if (this.fichesCloud()) { const up = await Store.assets.upload(file, { type: "application/pdf" }); meta.assetId = up.id; await Store.db.collection("fiches").doc(id).set(meta); }
+    else await IDB.set("fiche:" + id, { ...meta, blob: file });
+    return meta;
+  },
+  async delFiche(f) {
+    if (this.fichesCloud()) { await Store.db.collection("fiches").doc(f.id).delete(); if (f.assetId) await safe(() => Store.assets.delete(f.assetId)); }
+    else await IDB.del("fiche:" + f.id);
+  },
+  async ficheBytes(f) {
+    if (f.assetId) { const r = await fetch("/_blob/" + f.assetId); if (!r.ok) throw new Error("Fiche introuvable : " + f.nom); return r.arrayBuffer(); }
+    const rec = await IDB.get("fiche:" + f.id); if (!rec) throw new Error("Fiche introuvable : " + f.nom); return rec.blob.arrayBuffer();
+  }
+};
+
+/* ---------- état du devis ---------- */
+let fiches = [];
+let devisList = [];
+let cur = null;
+
+function blankLine(tva) { return { id: uid(), designation: "", description: "", qte: 1, unite: "u", pu: 0, remise: 0, tva: tva ?? num((typeof cur !== "undefined" && cur && cur.tvaDef) ?? 20), achat: "", achatMode: "TTC", achatTva: 20, marge: 0 }; }
+const MARGES = [10, 20, 30, 40, 50, 60, 70];
+const achatHT = l => { const a = num(l.achat); return l.achatMode === "TTC" ? a / (1 + num(l.achatTva ?? 20) / 100) : a; };
+function applyMarge(l) { if (num(l.achat) > 0) l.pu = (Math.round(achatHT(l) * (1 + num(l.marge) / 100) * 100) / 100).toFixed(2); }
+function nextNumber() {
+  const y = new Date().getFullYear(); const pre = `D-${y}-`;
+  const max = devisList.map(d => d.numero || "").filter(n => n.startsWith(pre)).map(n => parseInt(n.slice(pre.length), 10) || 0).reduce((a, b) => Math.max(a, b), 0);
+  return pre + String(max + 1).padStart(3, "0");
+}
+const CATS = { installation: "Installation", maintenance: "Maintenance", depannage: "Dépannage" };
+const STATUTS = { en_cours: "En cours", accepte: "Accepté", refuse: "Refusé" };
+const TVAS = [20, 10, 5.5];
+function norm(d) { d.categorie = d.categorie || "installation"; d.statut = d.statut || "en_cours"; d.depenses = Array.isArray(d.depenses) ? d.depenses : []; d.tvaDef = d.tvaDef ?? 20; return d; }
+function newDevis(cat) {
+  cur = { id: uid(), type: "particulier", client: { societe: "", nom: "", adresse: "", cp: "", ville: "", tel: "", email: "", siret: "", lieu: "" },
+    numero: nextNumber(), date: today(), objet: "", tvaDef: 20, acompte: num(settings.acompte) || 50, lignes: [blankLine(20)], fiches: [], notes: "",
+    categorie: cat || "installation", statut: "en_cours", depenses: [], couleur: settings.couleur || "#1F5FA8" };
+  loadForm();
+}
+function renderTvaChips() {
+  $("tvaChips").innerHTML = TVAS.map(v => `<button type="button" data-tva="${v}" aria-pressed="${num(cur.tvaDef) === v}">${pct(v)}</button>`).join("");
+  $("tvaHint").textContent = cur.type === "particulier"
+    ? "Particulier : 20 % en logement neuf ou de moins de 2 ans, 10 % pour la pose dans un logement de plus de 2 ans, 5,5 % pour les travaux de rénovation énergétique éligibles. L'attestation TVA du client est nécessaire pour 10 % et 5,5 %."
+    : "Professionnel : 20 %.";
+}
+function setTvaAll(v) { cur.tvaDef = v; cur.lignes.forEach(l => l.tva = v); renderTvaChips(); renderLines(); renderTotals(); }
+$("tvaChips").onclick = e => { const b = e.target.closest("button[data-tva]"); if (!b) return; readForm(); setTvaAll(num(b.dataset.tva)); toast(`TVA ${pct(num(b.dataset.tva))} appliquée à toutes les lignes.`); };
+
+/* ---------- calculs ---------- */
+function compute(d) {
+  let brut = 0, remise = 0; const tvaMap = {};
+  d.lignes.forEach(l => {
+    const b = num(l.qte) * num(l.pu); const r = b * num(l.remise) / 100; const ht = b - r;
+    brut += b; remise += r; const k = String(num(l.tva)); tvaMap[k] = (tvaMap[k] || 0) + ht;
+  });
+  const ht = brut - remise; const tvas = Object.keys(tvaMap).sort((a, b) => b - a).map(k => ({ taux: num(k), base: tvaMap[k], montant: tvaMap[k] * num(k) / 100 }));
+  const tva = tvas.reduce((a, t) => a + t.montant, 0); const ttc = ht + tva;
+  return { brut, remise, ht, tvas, tva, ttc, acompte: ttc * num(d.acompte) / 100 };
+}
+
+/* ---------- formulaire ---------- */
+const clientFields = { societe: "cSociete", nom: "cNom", adresse: "cAdresse", cp: "cCp", ville: "cVille", tel: "cTel", email: "cEmail", siret: "cSiret", lieu: "cLieu" };
+function setType(t) {
+  cur.type = t; const part = t === "particulier";
+  $("tParticulier").setAttribute("aria-pressed", part); $("tPro").setAttribute("aria-pressed", !part);
+  $("partNotice").hidden = !part; $("lblSociete").hidden = part; $("lblSiret").hidden = part;
+  renderTvaChips();
+}
+function loadForm() {
+  setType(cur.type);
+  for (const [k, id] of Object.entries(clientFields)) $(id).value = cur.client[k] || "";
+  $("dNum").value = cur.numero; $("dDate").value = cur.date; $("dObjet").value = cur.objet;
+  norm(cur); $("dCat").value = cur.categorie; $("dStatut").value = cur.statut; $("dAcompte").value = cur.acompte; $("dNotes").value = cur.notes || "";
+  renderLines(); renderFicheChoice(); renderExp(); renderTotals(); renderClientPick(); renderFact(); renderSwatches();
+}
+function readForm() {
+  for (const [k, id] of Object.entries(clientFields)) cur.client[k] = $(id).value.trim();
+  cur.numero = $("dNum").value.trim(); cur.date = $("dDate").value || today(); cur.objet = $("dObjet").value.trim();
+  cur.categorie = $("dCat").value; cur.statut = $("dStatut").value; cur.acompte = num($("dAcompte").value); cur.notes = $("dNotes").value;
+}
+function tvaOptions(sel) { return [20, 10, 5.5, 0].map(v => `<option value="${v}" ${num(sel) === v ? "selected" : ""}>${pct(v)}</option>`).join(""); }
+function renderLines() {
+  $("lines").innerHTML = cur.lignes.map((l, i) => {
+    const ht = num(l.qte) * num(l.pu) * (1 - num(l.remise) / 100);
+    return `<div class="line" data-i="${i}">
+      <div class="head"><strong>Ligne ${i + 1}</strong><span class="tot" data-tot>${eur(ht)} HT</span></div>
+      <label>Désignation<input data-k="designation" value="${esc(l.designation)}" placeholder="Ex. Unité extérieure Daikin RXM35R"></label>
+      <label style="margin-top:8px">Détail (facultatif)<input data-k="description" value="${esc(l.description)}"></label>
+      <div class="buy">
+        <div class="row" style="margin-top:0">
+          <label>Prix d'achat fournisseur<input data-k="achat" inputmode="decimal" value="${esc(l.achat)}" placeholder="0,00"></label>
+          <label>Prix fournisseur en<select data-k="achatMode"><option ${l.achatMode !== "HT" ? "selected" : ""}>TTC</option><option ${l.achatMode === "HT" ? "selected" : ""}>HT</option></select></label>
+          <label>TVA fournisseur<select data-k="achatTva" ${l.achatMode === "HT" ? "disabled" : ""}>${tvaOptions(l.achatTva ?? 20)}</select></label>
+        </div>
+        <div class="chips" role="group" aria-label="Marge sur l'achat">${MARGES.map(m => `<button type="button" data-marge="${m}" aria-pressed="${num(l.marge) === m}">+${m} %</button>`).join("")}</div>
+        <div class="buyinfo" data-buy>${buyInfo(l)}</div>
+      </div>
+      <div class="row">
+        <label>Quantité<input data-k="qte" inputmode="decimal" value="${esc(l.qte)}"></label>
+        <label>Unité<select data-k="unite">${["u", "h", "forfait", "m", "ml", "kg", "lot"].map(u => `<option ${l.unite === u ? "selected" : ""}>${u}</option>`).join("")}</select></label>
+        <label>Prix unit. HT<input data-k="pu" inputmode="decimal" value="${esc(l.pu)}"></label>
+      </div>
+      <div class="row2">
+        <label>Remise %<input data-k="remise" inputmode="decimal" value="${esc(l.remise)}"></label>
+        <label>TVA<select data-k="tva">${tvaOptions(l.tva)}</select></label>
+        <div style="display:flex;align-items:flex-end;justify-content:flex-end;gap:4px">
+          <button class="btn ghost" type="button" data-act="up" aria-label="Monter la ligne">↑</button>
+          <button class="btn ghost danger" type="button" data-act="del">Supprimer</button>
+        </div>
+      </div></div>`;
+  }).join("") || `<p class="empty">Aucune ligne. Ajoute la première ligne du devis.</p>`;
+}
+const lineHT = l => num(l.qte) * num(l.pu) * (1 - num(l.remise) / 100);
+const lineMarge = l => num(l.achat) > 0 ? lineHT(l) - achatHT(l) * num(l.qte) : 0;
+function buyInfo(l) {
+  if (!(num(l.achat) > 0)) return "Saisis le prix fournisseur puis choisis ta marge : le prix de vente se calcule tout seul.";
+  return `Achat ${eur(achatHT(l))} HT · Vente ${eur(num(l.pu))} HT · Ta marge sur la ligne : <b>${eur(lineMarge(l))}</b>`;
+}
+function refreshLine(box, l) {
+  box.querySelector("[data-tot]").textContent = eur(lineHT(l)) + " HT";
+  box.querySelector("[data-buy]").innerHTML = buyInfo(l);
+  box.querySelectorAll("[data-marge]").forEach(b => b.setAttribute("aria-pressed", num(l.marge) === num(b.dataset.marge)));
+}
+const BUY_KEYS = ["achat", "achatMode", "achatTva"];
+function onLineEdit(el) {
+  const box = el.closest(".line"); if (!box || !el.dataset.k) return;
+  const l = cur.lignes[+box.dataset.i]; l[el.dataset.k] = el.value;
+  if (el.dataset.k === "pu") l.marge = 0;
+  if (BUY_KEYS.includes(el.dataset.k)) {
+    if (el.dataset.k === "achatMode") box.querySelector('[data-k="achatTva"]').disabled = el.value === "HT";
+    if (num(l.marge)) { applyMarge(l); box.querySelector('[data-k="pu"]').value = l.pu; }
+  }
+  refreshLine(box, l); renderTotals();
+}
+$("lines").addEventListener("input", e => { if (e.target.tagName === "INPUT") onLineEdit(e.target); });
+$("lines").addEventListener("change", e => { if (e.target.tagName === "SELECT") onLineEdit(e.target); });
+$("lines").addEventListener("click", e => {
+  const m = e.target.closest("button[data-marge]");
+  if (m) {
+    const box = m.closest(".line"); const l = cur.lignes[+box.dataset.i];
+    if (!(num(l.achat) > 0)) { toast("Saisis d'abord le prix d'achat fournisseur."); box.querySelector('[data-k="achat"]').focus(); return; }
+    l.marge = num(m.dataset.marge); applyMarge(l); box.querySelector('[data-k="pu"]').value = l.pu; refreshLine(box, l); renderTotals(); return;
+  }
+  const b = e.target.closest("button[data-act]"); if (!b) return; const i = +b.closest(".line").dataset.i;
+  if (b.dataset.act === "del") cur.lignes.splice(i, 1);
+  if (b.dataset.act === "up" && i > 0) [cur.lignes[i - 1], cur.lignes[i]] = [cur.lignes[i], cur.lignes[i - 1]];
+  renderLines(); renderTotals();
+});
+$("addLine").onclick = () => { readForm(); cur.lignes.push(blankLine(cur.tvaDef)); renderLines(); renderTotals(); const last = $("lines").lastElementChild?.querySelector("input"); last && last.focus(); };
+$("tParticulier").onclick = () => { readForm(); setType("particulier"); renderTotals(); $("tvaChips").scrollIntoView({ block: "nearest", behavior: "smooth" }); toast("Choisis la TVA : 20 %, 10 % ou 5,5 %."); };
+$("tPro").onclick = () => { readForm(); setType("professionnel"); setTvaAll(20); };
+$("dAcompte").addEventListener("input", () => { cur.acompte = num($("dAcompte").value); renderTotals(); });
+
+function renderTotals() {
+  const t = compute(cur);
+  $("totals").innerHTML = `<h2>Récapitulatif</h2>
+    <div><span>Total HT brut</span><span>${eur(t.brut)}</span></div>
+    ${t.remise ? `<div><span>Remise</span><span>-${eur(t.remise)}</span></div>` : ""}
+    <div><span>Total HT</span><span>${eur(t.ht)}</span></div>
+    ${t.tvas.map(v => `<div><span>TVA ${pct(v.taux)}</span><span>${eur(v.montant)}</span></div>`).join("")}
+    <div class="ttc"><span>Total TTC</span><span>${eur(t.ttc)}</span></div>
+    <div><span>Acompte ${pct(num(cur.acompte))}${cur.type === "particulier" ? " (exigible à J+7)" : ""}</span><span>${eur(t.acompte)}</span></div>
+    ${(() => { const bought = cur.lignes.filter(l => num(l.achat) > 0); if (!bought.length) return "";
+      const ach = bought.reduce((a, l) => a + achatHT(l) * num(l.qte), 0), mg = bought.reduce((a, l) => a + lineMarge(l), 0);
+      return `<div class="private"><span>Achats fournisseur HT</span><span>${eur(ach)}</span></div><div class="private"><span>Marge prévue sur le matériel</span><span><b>${eur(mg)}</b></span></div>`; })()}
+    ${(() => { const r = realMargin(cur); if (!cur.depenses.length) return "";
+      return `<div class="margebox"><div><span>Dépenses réelles HT (${cur.depenses.length} facture${cur.depenses.length > 1 ? "s" : ""})</span><span>${eur(r.dep)}</span></div><div><span><b>Marge réelle du projet</b></span><span><b>${eur(r.marge)}</b> (${r.taux.toFixed(1).replace(".", ",")} %)</span></div></div>`; })()}
+    <p class="muted" style="margin:6px 0 0">Achats, dépenses et marges ne figurent jamais sur le PDF client.</p>`;
+  $("dockSum").innerHTML = `Total TTC<b>${eur(t.ttc)}</b>`;
+  if (typeof renderFactNet === "function" && cur.facture) renderFactNet();
+}
+
+/* ---------- marge globale ---------- */
+$("photoMarge").innerHTML = `<option value="0">Aucune</option>` + MARGES.map(m => `<option value="${m}" ${m === 30 ? "selected" : ""}>+${m} %</option>`).join("");
+$("allMarge").innerHTML = MARGES.map(m => `<button type="button" data-all="${m}">+${m} %</button>`).join("");
+$("allMarge").onclick = e => {
+  const b = e.target.closest("button[data-all]"); if (!b) return; readForm();
+  const targets = cur.lignes.filter(l => num(l.achat) > 0);
+  if (!targets.length) return toast("Aucune ligne n'a de prix d'achat fournisseur.");
+  targets.forEach(l => { l.marge = num(b.dataset.all); applyMarge(l); });
+  renderLines(); renderTotals(); toast(`Marge de ${b.dataset.all} % appliquée sur ${targets.length} ligne${targets.length > 1 ? "s" : ""}.`);
+};
+
+/* ---------- photo de l'offre fournisseur ---------- */
+function shrinkImage(file) {
+  return new Promise((res, rej) => {
+    const img = new Image(); const url = URL.createObjectURL(file);
+    img.onload = () => { const max = 1800, sc = Math.min(1, max / Math.max(img.width, img.height)); const c = document.createElement("canvas");
+      c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc); c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url); c.toBlob(b => b ? res(b) : rej(new Error("image")), "image/jpeg", 0.85); };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error("Image illisible.")); };
+    img.src = url;
+  });
+}
+/* une image (photo, galerie, WhatsApp) ou un PDF -> images prêtes à lire */
+async function toImages(file) {
+  const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name || "");
+  if (!isPdf) return [await shrinkImage(file)];
+  const lib = await loadPdfJs(); const pdf = await lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+  const out = [];
+  for (let i = 1; i <= Math.min(pdf.numPages, 4); i++) {
+    const page = await pdf.getPage(i); const v1 = page.getViewport({ scale: 1 }); const vp = page.getViewport({ scale: 1600 / Math.max(v1.width, v1.height) });
+    const c = document.createElement("canvas"); c.width = vp.width; c.height = vp.height; const ctx = c.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    out.push(await new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error("Conversion du PDF impossible.")), "image/jpeg", 0.85)));
+  }
+  return out;
+}
+function noSampleMsg() { return "La lecture automatique ne fonctionne que dans l'application Claude ou sur claude.ai, connecté à ton compte. Ouvre le logiciel depuis Claude, ou saisis les montants à la main."; }
+function readErr(e, what) {
+  if (e?.code === "not_granted") return "Autorise la page à utiliser Claude (fenêtre d'autorisation), puis réessaie.";
+  if (e?.code === "rate_limited") return "Trop de lectures d'affilée. Réessaie dans une minute.";
+  if (e?.code === "image_rejected" || e?.code === "too_large") return "Image refusée (format ou taille). Réessaie avec une capture d'écran ou une photo JPG.";
+  if (e?.message === "image" || e?.message === "Image illisible.") return "Cette image ne peut pas être ouverte (format HEIC ?). Fais une capture d'écran de la photo et choisis la capture.";
+  if (e?.message === "script") return "Le lecteur PDF n'a pas pu se charger. Vérifie la connexion internet.";
+  return `La lecture ${what} a échoué. Reprends une photo plus nette, bien à plat et éclairée.`;
+}
+function setBusy(target, on) { document.querySelectorAll(`input[data-target="${target}"]`).forEach(i => i.closest(".filebtn").classList.toggle("busy", on)); }
+async function readOffer(file) {
+  if (!file) return;
+  const st = $("photoStatus"); st.classList.remove("status-err");
+  if (!Store.sample) { st.textContent = noSampleMsg(); st.classList.add("status-err"); return; }
+  setBusy("offre", true);
+  st.textContent = "Lecture de l'offre en cours…";
+  try {
+    const images = await toImages(file);
+    const prompt = `Cette image est une offre de prix (devis, facture ou tarif) d'un fournisseur de climatisation / CVC, en français.
+Extrais chaque article ou prestation facturé. Ignore les lignes de sous-total, total, TVA, frais de port à 0, remises globales et mentions légales.
+Réponds UNIQUEMENT avec un objet JSON, sans texte autour, au format :
+{"prix_en":"HT" ou "TTC","tva":20,"lignes":[{"designation":"texte court avec la marque et le modèle","reference":"référence fabricant ou vide","quantite":1,"prix_unitaire":0}]}
+- "prix_unitaire" est le prix d'UN article après remise ligne éventuelle, en nombre décimal (point comme séparateur), dans la base indiquée par "prix_en".
+- "prix_en" : "TTC" si les prix unitaires affichés incluent la TVA, sinon "HT". Si l'offre ne le précise pas, mets "HT".
+- "tva" : le taux de TVA indiqué sur l'offre (20, 10, 5.5) ou 20 par défaut.
+- Si un nombre est illisible, mets 0 plutôt que d'inventer.`;
+    const data = await Store.sample.json(prompt, { images, modelTier: "default" });
+    const lignes = Array.isArray(data?.lignes) ? data.lignes : [];
+    if (!lignes.length) { st.textContent = "Aucun article reconnu sur la photo. Reprends-la bien à plat, nette et éclairée."; return; }
+    readForm();
+    const forced = $("photoMode").value; const mode = forced === "auto" ? (String(data.prix_en).toUpperCase() === "TTC" ? "TTC" : "HT") : forced;
+    const marge = num($("photoMarge").value); const tvaF = [20, 10, 5.5, 0].includes(num(data.tva)) ? num(data.tva) : 20;
+    if (cur.lignes.length === 1 && !cur.lignes[0].designation && !num(cur.lignes[0].pu)) cur.lignes = [];
+    let zero = 0;
+    lignes.forEach(x => {
+      const l = blankLine(cur.tvaDef);
+      l.designation = String(x.designation || "Article").slice(0, 200); l.description = x.reference ? "Réf. " + String(x.reference).slice(0, 80) : "";
+      l.qte = num(x.quantite) > 0 ? num(x.quantite) : 1; l.achat = num(x.prix_unitaire) ? String(num(x.prix_unitaire)) : ""; l.achatMode = mode; l.achatTva = tvaF;
+      l.marge = marge; if (num(l.achat) > 0) applyMarge(l); else zero++;
+      cur.lignes.push(l);
+    });
+    renderLines(); renderTotals();
+    st.textContent = `${lignes.length} ligne${lignes.length > 1 ? "s" : ""} ajoutée${lignes.length > 1 ? "s" : ""} (prix fournisseur lus en ${mode}${marge ? `, marge +${marge} %` : ""}). Vérifie chaque prix avant d'envoyer le devis.${zero ? ` ${zero} prix illisible${zero > 1 ? "s" : ""} à compléter.` : ""}`;
+  } catch (e) {
+    console.error(e);
+    st.textContent = readErr(e, "de l'offre"); st.classList.add("status-err");
+  } finally { setBusy("offre", false); }
+}
+
+/* ---------- fiches marques ---------- */
+function brands() { return [...new Set(fiches.map(f => f.marque))].sort((a, b) => a.localeCompare(b, "fr")); }
+function renderFicheChoice() {
+  if (!fiches.length) { $("ficheChoice").innerHTML = `<p class="empty">La bibliothèque est vide. Ajoute des PDF dans l'onglet Fiches marques.</p>`; return; }
+  $("ficheChoice").innerHTML = brands().map(b => `<h3>${esc(b)}</h3>` + fiches.filter(f => f.marque === b).map(f =>
+    `<label class="chk"><input type="checkbox" data-fiche="${f.id}" ${cur.fiches.includes(f.id) ? "checked" : ""}>${esc(f.nom)}</label>`).join("")).join("");
+}
+$("ficheChoice").addEventListener("change", e => {
+  const id = e.target.dataset.fiche; if (!id) return;
+  cur.fiches = e.target.checked ? [...new Set([...cur.fiches, id])] : cur.fiches.filter(x => x !== id);
+});
+function renderFicheLib() {
+  $("marquesList").innerHTML = brands().map(b => `<option value="${esc(b)}">`).join("");
+  if (!fiches.length) { $("ficheLib").innerHTML = `<p class="empty">Aucune fiche. Choisis une marque et ajoute ses PDF (fiches techniques, notices, garanties).</p>`; return; }
+  $("ficheLib").innerHTML = brands().map(b => `<h3>${esc(b)}</h3>` + fiches.filter(f => f.marque === b).map(f =>
+    `<div class="item"><div>${esc(f.nom)}<div class="meta">${(f.taille / 1048576).toFixed(1).replace(".", ",")} Mo</div></div>
+     <button class="btn ghost danger" type="button" data-delfiche="${f.id}">Supprimer</button></div>`).join("")).join("");
+}
+$("addFiches").onclick = async () => {
+  const marque = $("fMarque").value.trim(); const files = [...$("fFiles").files];
+  if (!marque) return toast("Indique la marque avant d'ajouter les PDF.");
+  if (!files.length) return toast("Choisis au moins un fichier PDF.");
+  const btn = $("addFiches"); btn.disabled = true; let ok = 0;
+  for (const f of files) {
+    if (!/\.pdf$/i.test(f.name)) { toast(`${f.name} n'est pas un PDF.`); continue; }
+    if (f.size > 20 * 1048576) { toast(`${f.name} dépasse 20 Mo.`); continue; }
+    try { fiches.push(await S.addFiche(f, marque)); ok++; } catch (e) { toast(`Échec de l'ajout de ${f.name}.`); console.error(e); }
+  }
+  btn.disabled = false; $("fFiles").value = "";
+  renderFicheLib(); renderFicheChoice(); if (ok) toast(`${ok} fiche${ok > 1 ? "s" : ""} ajoutée${ok > 1 ? "s" : ""} pour ${marque}.`);
+};
+$("ficheLib").addEventListener("click", async e => {
+  const id = e.target.dataset.delfiche; if (!id) return; const f = fiches.find(x => x.id === id);
+  if (!confirm(`Supprimer « ${f.nom} » de la bibliothèque ?`)) return;
+  try { await S.delFiche(f); fiches = fiches.filter(x => x.id !== id); cur.fiches = cur.fiches.filter(x => x !== id); renderFicheLib(); renderFicheChoice(); toast("Fiche supprimée."); }
+  catch { toast("La suppression a échoué."); }
+});
+
+/* ---------- dépenses du projet ---------- */
+const EXP_CATS = ["Matériel", "Restaurant", "Carburant", "Outillage", "Sous-traitance", "Péage / parking", "Hôtel", "Autre"];
+const expHT = x => num(x.ht) || (num(x.ttc) ? num(x.ttc) - num(x.tva) : 0);
+function realMargin(d) {
+  const t = compute(d); const dep = (d.depenses || []).reduce((a, x) => a + expHT(x), 0); const marge = t.ht - dep;
+  return { ht: t.ht, dep, marge, taux: t.ht ? marge / t.ht * 100 : 0 };
+}
+function renderExp() {
+  const list = cur.depenses || [];
+  if (!list.length) { $("expList").innerHTML = `<p class="empty">Aucune facture pour ce projet.</p>`; return; }
+  $("expList").innerHTML = list.map((x, i) => `<div class="exp" data-e="${i}">
+    <div class="top">
+      <label>Fournisseur<input data-ek="fournisseur" value="${esc(x.fournisseur)}"></label>
+      <label>Catégorie<select data-ek="categorie">${EXP_CATS.map(c => `<option ${x.categorie === c ? "selected" : ""}>${c}</option>`).join("")}</select></label>
+      <label>Date<input data-ek="date" type="date" value="${esc(x.date)}"></label>
+    </div>
+    <div class="row">
+      <label>Total HT<input data-ek="ht" inputmode="decimal" value="${esc(x.ht)}"></label>
+      <label>TVA<input data-ek="tva" inputmode="decimal" value="${esc(x.tva)}"></label>
+      <label>Total TTC<input data-ek="ttc" inputmode="decimal" value="${esc(x.ttc)}"></label>
+    </div>
+    <div class="foot"><span>${x.photo ? `<img src="/_blob/${esc(x.photo)}" alt="Facture" data-view="${esc(x.photo)}">` : ""}</span><button class="btn ghost danger" type="button" data-edel="${i}">Supprimer</button></div>
+  </div>`).join("");
+}
+$("expList").addEventListener("input", e => { const el = e.target; const box = el.closest(".exp"); if (!box || !el.dataset.ek) return; cur.depenses[+box.dataset.e][el.dataset.ek] = el.value; renderTotals(); });
+$("expList").addEventListener("change", e => { const el = e.target; const box = el.closest(".exp"); if (!box || !el.dataset.ek) return; cur.depenses[+box.dataset.e][el.dataset.ek] = el.value; renderTotals(); });
+$("expList").addEventListener("click", e => {
+  const d = e.target.dataset.edel; if (d !== undefined) { if (!confirm("Supprimer cette dépense ?")) return; cur.depenses.splice(+d, 1); renderExp(); renderTotals(); }
+});
+$("expAdd").onclick = () => { cur.depenses.push({ id: uid(), fournisseur: "", categorie: "Matériel", date: today(), ht: "", tva: "", ttc: "", photo: "" }); renderExp(); renderTotals(); $("expList").lastElementChild.querySelector("input").focus(); };
+async function scanInvoice(file) {
+  if (!file) return;
+  const st = $("scanStatus"); st.classList.remove("status-err"); setBusy("scan", true);
+  st.textContent = Store.sample ? "Lecture de la facture en cours…" : "Ajout de la facture…";
+  try {
+    const images = await toImages(file); const blob = images[0];
+    if (!Store.sample) {
+      let photo = ""; if (Store.assets) { try { photo = (await Store.assets.upload(blob, { type: "image/jpeg" })).id; } catch (e) { console.error(e); } }
+      cur.depenses.push({ id: uid(), fournisseur: "", categorie: "Matériel", date: today(), ht: "", tva: "", ttc: "", photo }); renderExp(); renderTotals();
+      st.textContent = "Facture ajoutée sans lecture automatique : complète le fournisseur et les montants. " + noSampleMsg(); st.classList.add("status-err");
+      await safe(persistCur); return;
+    }
+    const prompt = `Cette image est une facture ou un ticket de caisse (matériel de climatisation, outillage, restaurant, carburant, hôtel, péage, etc.), en général en français.
+Réponds UNIQUEMENT avec un objet JSON, sans texte autour :
+{"fournisseur":"nom du commerce","date":"AAAA-MM-JJ ou vide","categorie":"Matériel|Restaurant|Carburant|Outillage|Sous-traitance|Péage / parking|Hôtel|Autre","total_ht":0,"total_tva":0,"total_ttc":0}
+- Montants en nombres décimaux (point comme séparateur), en euros, pour la facture entière.
+- Si seul le TTC et la TVA apparaissent, calcule total_ht = total_ttc - total_tva. Si un montant est absent ou illisible, mets 0. N'invente rien.`;
+    const data = await Store.sample.json(prompt, { images, modelTier: "default" });
+    let photo = "";
+    if (Store.assets) { try { photo = (await Store.assets.upload(blob, { type: "image/jpeg" })).id; } catch (e) { console.error(e); } }
+    const ttc = num(data?.total_ttc), tva = num(data?.total_tva); let ht = num(data?.total_ht); if (!ht && ttc) ht = ttc - tva;
+    const r2 = n => n ? String(Math.round(n * 100) / 100) : "";
+    const x = { id: uid(), fournisseur: String(data?.fournisseur || "").slice(0, 120), categorie: EXP_CATS.includes(data?.categorie) ? data.categorie : "Autre",
+      date: /^\d{4}-\d{2}-\d{2}$/.test(data?.date || "") ? data.date : today(), ht: r2(ht), tva: r2(tva), ttc: r2(ttc), photo };
+    cur.depenses.push(x); renderExp(); renderTotals();
+    st.textContent = `Facture ajoutée : ${x.fournisseur || "fournisseur inconnu"}, ${eur(expHT(x))} HT. Vérifie les montants.${ht ? "" : " Le montant n'a pas pu être lu : complète-le."}`;
+    await safe(persistCur);
+  } catch (e) {
+    console.error(e);
+    st.textContent = readErr(e, "de la facture"); st.classList.add("status-err");
+  } finally { setBusy("scan", false); }
+}
+/* coller ou glisser une image : solution quand le sélecteur de fichiers ne s'ouvre pas */
+const PASTE_TXT = {};
+const runTarget = (t, f) => (t === "scan" ? scanInvoice : readOffer)(f);
+function fileFromItems(items) {
+  for (const it of items || []) { if (it.kind === "file" && /^image\/|application\/pdf/.test(it.type)) { const f = it.getAsFile(); if (f) return f; } }
+  return null;
+}
+document.querySelectorAll(".pastezone").forEach(z => {
+  const t = z.dataset.paste; PASTE_TXT[t] = z.innerHTML;
+  const reset = () => { z.innerHTML = PASTE_TXT[t]; };
+  z.addEventListener("paste", e => {
+    e.preventDefault();
+    const f = fileFromItems(e.clipboardData && e.clipboardData.items) || (e.clipboardData && e.clipboardData.files && e.clipboardData.files[0]);
+    reset(); z.blur();
+    if (f) runTarget(t, f); else toast("Aucune image dans le presse-papiers. Copie d'abord la photo.");
+  });
+  z.addEventListener("input", reset);
+  z.addEventListener("keydown", e => { if (!(e.ctrlKey || e.metaKey)) e.preventDefault(); });
+  z.addEventListener("dragover", e => { e.preventDefault(); z.classList.add("drag"); });
+  z.addEventListener("dragleave", () => z.classList.remove("drag"));
+  z.addEventListener("drop", e => { e.preventDefault(); z.classList.remove("drag"); const f = e.dataTransfer && e.dataTransfer.files[0]; if (f) runTarget(t, f); });
+});
+document.querySelectorAll("button[data-clip]").forEach(b => b.addEventListener("click", async () => {
+  const t = b.dataset.clip;
+  try {
+    if (!navigator.clipboard || !navigator.clipboard.read) throw new Error("no");
+    const items = await navigator.clipboard.read();
+    for (const it of items) { const type = it.types.find(x => x.startsWith("image/")); if (type) { const blob = await it.getType(type); return runTarget(t, new File([blob], "image." + type.split("/")[1], { type })); } }
+    toast("Aucune image copiée. Copie d'abord la photo dans WhatsApp ou la galerie.");
+  } catch { toast("Ton téléphone bloque ce bouton : appuie longtemps dans la zone en pointillés, puis Coller."); document.querySelector(`.pastezone[data-paste="${t}"]`).focus(); }
+}));
+document.querySelectorAll("input[data-target]").forEach(inp => inp.addEventListener("change", () => {
+  const f = inp.files && inp.files[0]; const target = inp.dataset.target; inp.value = "";
+  if (!f) return; (target === "scan" ? scanInvoice : readOffer)(f);
+}));
+
+/* ---------- suivi : tableau de bord et onglets métier ---------- */
+let suiviCat = "", suiviSt = "";
+function renderHisto() { renderSuivi(); if (typeof renderClients === "function") renderClients(); if (typeof renderFactures === "function") renderFactures(); }
+function renderSuivi() {
+  devisList.forEach(norm);
+  const inCat = devisList.filter(d => !suiviCat || d.categorie === suiviCat);
+  $("suiviTitle").textContent = suiviCat ? CATS[suiviCat] : "Suivi des devis";
+  $("suiviNew").textContent = suiviCat ? `Nouveau devis ${CATS[suiviCat].toLowerCase()}` : "Nouveau devis";
+  const grp = k => inCat.filter(d => d.statut === k);
+  const sumHT = arr => arr.reduce((a, d) => a + compute(d).ht, 0);
+  const acc = grp("accepte"); const rm = acc.map(realMargin); const caAcc = sumHT(acc); const depAcc = rm.reduce((a, r) => a + r.dep, 0);
+  $("stats").innerHTML = `
+    <div class="stat enc"><div class="n">${grp("en_cours").length}</div><div class="l">En cours</div><div class="a">${eur(sumHT(grp("en_cours")))} HT</div></div>
+    <div class="stat acc"><div class="n">${acc.length}</div><div class="l">Acceptés</div><div class="a">${eur(caAcc)} HT</div></div>
+    <div class="stat ref"><div class="n">${grp("refuse").length}</div><div class="l">Refusés</div><div class="a">${eur(sumHT(grp("refuse")))} HT</div></div>
+    <div class="margebox" style="grid-column:1/-1">
+      <div><span>Total des devis</span><span><b>${inCat.length}</b></span></div>
+      <div><span>Taux d'acceptation (hors en cours)</span><span>${(acc.length + grp("refuse").length) ? Math.round(acc.length / (acc.length + grp("refuse").length) * 100) + " %" : "-"}</span></div>
+      <div><span>Dépenses sur devis acceptés</span><span>${eur(depAcc)} HT</span></div>
+      <div><span><b>Marge réelle sur devis acceptés</b></span><span><b>${eur(caAcc - depAcc)}</b></span></div>
+    </div>`;
+  document.querySelectorAll("#statFilter button").forEach(b => b.setAttribute("aria-pressed", b.dataset.st === suiviSt));
+  const list = inCat.filter(d => !suiviSt || d.statut === suiviSt).sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.numero || "").localeCompare(a.numero || ""));
+  if (!list.length) { $("histo").innerHTML = `<p class="empty">${inCat.length ? "Aucun devis avec ce statut." : "Aucun devis ici pour l'instant. Crée-en un avec le bouton ci-dessus."}</p>`; return; }
+  $("histo").innerHTML = list.map(d => {
+    const nom = d.type === "professionnel" && d.client.societe ? d.client.societe : d.client.nom; const r = realMargin(d);
+    return `<div class="item"><div style="min-width:0"><strong>${esc(d.numero)}</strong><span class="st ${d.statut}">${STATUTS[d.statut]}</span><span class="tag ${d.type === "particulier" ? "part" : ""}">${d.type === "particulier" ? "Particulier" : "Pro"}</span>
+      <div class="meta">${esc(nom || "Sans nom")} · ${CATS[d.categorie]} · ${frDate(d.date)}</div>
+      <div class="meta">${eur(r.ht)} HT · ${eur(compute(d).ttc)} TTC${d.depenses.length ? ` · marge réelle ${eur(r.marge)}` : ""}</div>
+      <label style="margin-top:6px;max-width:170px">Statut<select data-stat="${d.id}">${Object.entries(STATUTS).map(([k, v]) => `<option value="${k}" ${d.statut === k ? "selected" : ""}>${v}</option>`).join("")}</select></label></div>
+      <div class="actions" style="flex-direction:column;align-items:flex-end"><button class="btn ghost" data-h="open" data-id="${d.id}">Ouvrir</button><button class="btn ghost" data-h="dup" data-id="${d.id}">Dupliquer</button><button class="btn ghost danger" data-h="del" data-id="${d.id}">Effacer</button></div></div>`;
+  }).join("");
+}
+$("statFilter").onclick = e => { const b = e.target.closest("button[data-st]"); if (!b) return; suiviSt = b.dataset.st; renderHisto(); };
+$("suiviNew").onclick = () => { newDevis(suiviCat || "installation"); showTab("devis"); };
+$("histo").addEventListener("change", async e => {
+  const id = e.target.dataset.stat; if (!id) return; const d = devisList.find(x => x.id === id); d.statut = e.target.value;
+  const created = ensureFacture(d);
+  if (cur && cur.id === id) { cur.statut = d.statut; cur.facture = d.facture; $("dStatut").value = d.statut; renderFact(); }
+  try { await S.saveDevis(JSON.parse(JSON.stringify(d))); renderHisto(); toast(created ? `Devis accepté : facture ${d.facture.numero} créée.` : `Devis ${d.numero} : ${STATUTS[d.statut].toLowerCase()}.`); } catch { toast("La mise à jour du statut a échoué."); }
+});
+$("histo").addEventListener("click", async e => {
+  const b = e.target.closest("button[data-h]"); if (!b) return; const d = devisList.find(x => x.id === b.dataset.id);
+  if (b.dataset.h === "open") { await flushSave(); cur = norm(JSON.parse(JSON.stringify(d))); loadForm(); setSaveState("ok", "Enregistré dans la base"); showTab("devis"); }
+  if (b.dataset.h === "dup") { cur = norm(JSON.parse(JSON.stringify(d))); cur.id = uid(); cur.numero = nextNumber(); cur.date = today(); cur.statut = "en_cours"; cur.depenses = []; delete cur.facture; loadForm(); showTab("devis"); toast(`Copie créée : ${cur.numero}`); }
+  if (b.dataset.h === "del") { if (await eraseDevis(d)) { if (cur && cur.id === d.id) { newDevis(); setSaveState("", "Pas encore enregistré"); } toast(`Devis ${d.numero} effacé.`); } }
+});
+/* ---------- base clients ---------- */
+let clients = [], cliFilter = "", cliOpen = "";
+const keyOf = c => (c.email ? "m:" + c.email.toLowerCase().trim() : "n:" + [c.type === "professionnel" && c.societe ? c.societe : c.nom, c.cp].join("|").toLowerCase().replace(/\s+/g, " ").trim());
+const cliName = c => (c.type === "professionnel" && c.societe ? c.societe : c.nom) || "Sans nom";
+function cliDevis(c) { return devisList.filter(d => d.clientId === c.id); }
+function cliStatus(c) {
+  const ds = cliDevis(c); if (ds.some(d => d.statut === "accepte")) return "accepte";
+  if (ds.length && ds.every(d => d.statut === "refuse")) return "refuse"; return "en_cours";
+}
+async function syncClient(d) {
+  const info = { type: d.type, ...d.client }; delete info.lieu;
+  if (!(info.nom || info.societe)) return;
+  let c = clients.find(x => x.id === d.clientId) || clients.find(x => keyOf(x) === keyOf(info));
+  if (!c) { c = { id: uid(), cree: Date.now(), notes: "" }; clients.push(c); }
+  Object.assign(c, info, { maj: Date.now() }); d.clientId = c.id;
+  await S.saveClient(c); renderClientPick();
+}
+function renderClientPick() {
+  const sel = $("cPick"); const v = cur?.clientId || "";
+  sel.innerHTML = `<option value="">Nouveau client</option>` + [...clients].sort((a, b) => cliName(a).localeCompare(cliName(b), "fr"))
+    .map(c => `<option value="${c.id}">${esc(cliName(c))}${c.ville ? " - " + esc(c.ville) : ""}</option>`).join("");
+  sel.value = clients.some(c => c.id === v) ? v : "";
+}
+function fillFromClient(c) {
+  cur.clientId = c.id; setType(c.type || "particulier"); if (cur.type === "professionnel") setTvaAll(20);
+  for (const [k, id] of Object.entries(clientFields)) if (k !== "lieu") $(id).value = c[k] || "";
+  readForm(); renderTotals();
+}
+$("cPick").onchange = () => {
+  const c = clients.find(x => x.id === $("cPick").value);
+  if (c) { fillFromClient(c); toast(`Client ${cliName(c)} repris.`); }
+  else { cur.clientId = ""; for (const id of Object.values(clientFields)) $(id).value = ""; readForm(); }
+};
+function renderClients() {
+  const q = $("cliSearch").value.trim().toLowerCase();
+  const all = clients.map(c => ({ c, st: cliStatus(c), ds: cliDevis(c) }));
+  const n = k => all.filter(x => x.st === k).length;
+  const caAcc = all.reduce((a, x) => a + x.ds.filter(d => d.statut === "accepte").reduce((s, d) => s + compute(d).ht, 0), 0);
+  $("cliStats").innerHTML = `
+    <div class="stat acc"><div class="n">${n("accepte")}</div><div class="l">Clients acceptés</div></div>
+    <div class="stat enc"><div class="n">${n("en_cours")}</div><div class="l">En cours</div></div>
+    <div class="stat ref"><div class="n">${n("refuse")}</div><div class="l">Refusés</div></div>
+    <div class="margebox" style="grid-column:1/-1"><div><span>Total clients</span><span><b>${clients.length}</b></span></div><div><span>Chiffre d'affaires accepté</span><span><b>${eur(caAcc)} HT</b></span></div></div>`;
+  document.querySelectorAll("#cliFilter button").forEach(b => b.setAttribute("aria-pressed", b.dataset.cf === cliFilter));
+  const list = all.filter(x => !cliFilter || x.st === cliFilter)
+    .filter(x => !q || [x.c.nom, x.c.societe, x.c.ville, x.c.cp, x.c.tel, x.c.email].join(" ").toLowerCase().includes(q))
+    .sort((a, b) => (b.c.maj || 0) - (a.c.maj || 0));
+  if (!list.length) { $("cliList").innerHTML = `<p class="empty">${clients.length ? "Aucun client ne correspond." : "Aucun client pour l'instant. Chaque client est ajouté automatiquement dès que tu enregistres un devis."}</p>`; return; }
+  $("cliList").innerHTML = list.map(({ c, st, ds }) => {
+    const acc = ds.filter(d => d.statut === "accepte"); const ref = ds.filter(d => d.statut === "refuse");
+    const open = cliOpen === c.id;
+    return `<div class="item cli"><div class="top"><div style="min-width:0"><strong>${esc(cliName(c))}</strong><span class="st ${st}">${STATUTS[st]}</span><span class="tag ${c.type === "particulier" ? "part" : ""}">${c.type === "particulier" ? "Particulier" : "Pro"}</span>
+      <div class="meta">${esc([c.ville, c.tel].filter(Boolean).join(" · ") || "Pas de coordonnées")}</div>
+      <div class="meta">${ds.length} devis · ${acc.length} accepté${acc.length > 1 ? "s" : ""} · ${ref.length} refusé${ref.length > 1 ? "s" : ""}${acc.length ? ` · ${eur(acc.reduce((s, d) => s + compute(d).ht, 0))} HT` : ""}</div></div>
+      <button class="btn ghost" data-c="toggle" data-id="${c.id}">${open ? "Fermer" : "Voir"}</button></div>
+      ${open ? `<div class="det">
+        ${c.type === "professionnel" && c.nom ? `<span class="meta">Contact : ${esc(c.nom)}</span>` : ""}
+        <span class="meta">${esc([c.adresse, [c.cp, c.ville].filter(Boolean).join(" ")].filter(Boolean).join(", "))}</span>
+        ${c.email ? `<span class="meta">${esc(c.email)}</span>` : ""}${c.siret ? `<span class="meta">SIRET / TVA : ${esc(c.siret)}</span>` : ""}
+        <label style="margin-top:8px">Notes sur le client<textarea data-cnote="${c.id}" placeholder="Code portail, matériel installé, préférences…">${esc(c.notes || "")}</textarea></label>
+        <h3>Devis</h3>
+        ${ds.length ? ds.sort((a, b) => (b.date || "").localeCompare(a.date || "")).map(d => `<div class="meta" style="display:flex;justify-content:space-between;gap:8px;padding:4px 0"><span>${esc(d.numero)} · ${CATS[d.categorie]} · ${frDate(d.date)} <span class="st ${d.statut}">${STATUTS[d.statut]}</span></span><button class="btn ghost" data-c="opendevis" data-id="${d.id}">Ouvrir</button></div>`).join("") : `<p class="empty">Aucun devis lié.</p>`}
+        <div class="actions" style="margin-top:8px"><button class="btn primary" data-c="new" data-id="${c.id}">Nouveau devis pour ce client</button><button class="btn ghost danger" data-c="del" data-id="${c.id}">Supprimer le client</button></div>
+      </div>` : ""}</div>`;
+  }).join("");
+}
+$("cliSearch").addEventListener("input", renderClients);
+$("cliFilter").onclick = e => { const b = e.target.closest("button[data-cf]"); if (!b) return; cliFilter = b.dataset.cf; renderClients(); };
+let noteT;
+$("cliList").addEventListener("input", e => {
+  const id = e.target.dataset.cnote; if (!id) return; const c = clients.find(x => x.id === id); c.notes = e.target.value;
+  clearTimeout(noteT); noteT = setTimeout(() => safe(() => S.saveClient(c)), 800);
+});
+$("cliList").addEventListener("click", async e => {
+  const b = e.target.closest("button[data-c]"); if (!b) return; const id = b.dataset.id;
+  if (b.dataset.c === "toggle") { cliOpen = cliOpen === id ? "" : id; renderClients(); }
+  if (b.dataset.c === "opendevis") { const d = devisList.find(x => x.id === id); cur = norm(JSON.parse(JSON.stringify(d))); loadForm(); showTab("devis"); }
+  if (b.dataset.c === "new") { const c = clients.find(x => x.id === id); newDevis(); fillFromClient(c); renderClientPick(); showTab("devis"); toast(`Nouveau devis pour ${cliName(c)}.`); }
+  if (b.dataset.c === "del") {
+    const c = clients.find(x => x.id === id); if (!confirm(`Supprimer ${cliName(c)} de la base clients ? Ses devis restent dans le suivi.`)) return;
+    try { await S.delClient(id); clients = clients.filter(x => x.id !== id); cliOpen = ""; renderClients(); renderClientPick(); toast("Client supprimé."); } catch { toast("La suppression a échoué."); }
+  }
+});
+
+function setSaveState(kind, text) { const el = $("saveState"); el.className = "savestate " + kind; el.textContent = text; }
+const hhmm = () => new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+let saving = Promise.resolve();
+async function persistCur() {
+  readForm(); clearTimeout(autoT);
+  const run = async () => {
+    await safe(() => syncClient(cur)); const copy = JSON.parse(JSON.stringify(cur)); copy.maj = Date.now();
+    await S.saveDevis(copy); const i = devisList.findIndex(x => x.id === copy.id); if (i >= 0) devisList[i] = copy; else devisList.push(copy); renderHisto();
+    setSaveState("ok", `Enregistré à ${hhmm()}`);
+  };
+  saving = saving.catch(() => {}).then(run);
+  try { await saving; } catch (e) { setSaveState("dirty", "Échec de l'enregistrement"); throw e; }
+}
+/* enregistrement automatique : chaque modification est sauvegardée dans la base */
+let autoT;
+function hasContent() { return !!(cur && (cur.client.nom || cur.client.societe || cur.lignes.some(l => l.designation || num(l.pu)) || cur.depenses.length)); }
+function scheduleSave() {
+  if (!cur) return; setSaveState("dirty", "Modifications non enregistrées"); clearTimeout(autoT);
+  autoT = setTimeout(() => { readForm(); if (hasContent()) safe(persistCur); }, 2500);
+}
+["input", "change"].forEach(ev => $("tab-devis").addEventListener(ev, e => { if (e.target.id === "cPick" || e.target.type === "file") return; scheduleSave(); }));
+$("tab-devis").addEventListener("click", e => { if (e.target.closest("button[data-act],button[data-marge],button[data-all],button[data-tva],button[data-edel],#addLine,#expAdd,#tParticulier,#tPro")) scheduleSave(); });
+window.addEventListener("pagehide", () => { if ($("saveState").classList.contains("dirty") && hasContent()) safe(persistCur); });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && $("saveState").classList.contains("dirty") && hasContent()) safe(persistCur); });
+
+$("saveDevis").onclick = async () => {
+  readForm(); if (!hasContent()) return toast("Le devis est vide : rien à enregistrer.");
+  const b = $("saveDevis"); b.disabled = true;
+  try { await persistCur(); toast(`Devis ${cur.numero} enregistré dans la base.`); } catch (e) { console.error(e); toast("L'enregistrement a échoué. Réessaie."); } finally { b.disabled = false; }
+};
+async function eraseDevis(d) {
+  if (d.facture) { toast(`Impossible d'effacer : la facture ${d.facture.numero} a été émise. Passe plutôt le devis en « Refusé ».`); return false; }
+  if (!confirm(`Effacer définitivement le devis ${d.numero} de la base ? Cette action est irréversible.`)) return false;
+  try { await S.delDevis(d.id); devisList = devisList.filter(x => x.id !== d.id); renderHisto(); return true; }
+  catch { toast("L'effacement a échoué."); return false; }
+}
+$("delDevis").onclick = async () => {
+  readForm(); clearTimeout(autoT);
+  const saved = devisList.some(x => x.id === cur.id);
+  if (!saved) { if (hasContent() && !confirm("Ce devis n'est pas enregistré. Tout effacer et repartir d'un devis vide ?")) return; newDevis(); setSaveState("", "Pas encore enregistré"); toast("Devis effacé."); return; }
+  const num0 = cur.numero;
+  if (await eraseDevis(cur)) { newDevis(); setSaveState("", "Pas encore enregistré"); window.scrollTo(0, 0); toast(`Devis ${num0} effacé.`); }
+};
+$("newDevis").onclick = async () => { if ($("saveState").classList.contains("dirty") && hasContent()) await safe(persistCur); newDevis(); setSaveState("", "Pas encore enregistré"); window.scrollTo(0, 0); toast(`Nouveau devis ${cur.numero}`); };
+
+/* ---------- réglages ---------- */
+const setFields = { nom: "sNom", adresse: "sAdresse", ville: "sVille", numero: "sNumero", email: "sEmail", tel: "sTel", signataire: "sSignataire", titulaire: "sTitulaire", iban: "sIban", bic: "sBic", acompte: "sAcompte", validite: "sValidite", garantie: "sGarantie", mediateur: "sMediateur", conditions: "sConditions" };
+function loadSettingsForm() {
+  for (const [k, id] of Object.entries(setFields)) $(id).value = settings[k] ?? "";
+  $("sLogoPrev").hidden = !settings.logo; $("sLogoDel").hidden = !settings.logo; if (settings.logo) $("sLogoPrev").src = settings.logo;
+}
+$("sLogoFile").onchange = () => {
+  const f = $("sLogoFile").files[0]; if (!f) return;
+  const img = new Image(); const url = URL.createObjectURL(f);
+  img.onload = () => {
+    const max = 600; const sc = Math.min(1, max / img.width); const c = document.createElement("canvas");
+    c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
+    const ctx = c.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0, c.width, c.height);
+    settings.logo = c.toDataURL("image/jpeg", 0.9); settings.logoW = c.width; settings.logoH = c.height; URL.revokeObjectURL(url); loadSettingsForm();
+    toast("Logo chargé. Enregistre les réglages pour le garder.");
+  };
+  img.src = url;
+};
+$("sLogoDel").onclick = () => { settings.logo = ""; settings.logoW = settings.logoH = 0; $("sLogoFile").value = ""; loadSettingsForm(); };
+$("saveSettings").onclick = async () => {
+  for (const [k, id] of Object.entries(setFields)) settings[k] = $(id).value.trim();
+  try { await S.saveSettings({ ...settings }); toast("Réglages enregistrés."); } catch (e) { console.error(e); toast("L'enregistrement des réglages a échoué."); }
+};
+
+/* ---------- onglets ---------- */
+async function flushSave() { if ($("saveState").classList.contains("dirty") && hasContent()) await safe(persistCur); }
+function showTab(name) {
+  $("dock").hidden = name !== "devis"; if (name !== "devis") flushSave();
+  if (name === "envoi") { readForm(); renderEnvoi(); }
+  const suivi = name === "tout" || name in CATS;
+  if (suivi) { suiviCat = name === "tout" ? "" : name; suiviSt = ""; renderHisto(); }
+  document.querySelectorAll("nav button").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === name));
+  document.querySelectorAll("section.tab").forEach(s => s.classList.toggle("on", s.id === "tab-" + (suivi ? "suivi" : name)));
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+
+/* ---------- génération PDF ---------- */
+const BLUE = [31, 95, 168], INK = [24, 35, 46], GREY = [96, 110, 124], LIGHT = [227, 237, 248];
+const hexRgb = hx => { const m = /^#?([0-9a-f]{6})$/i.exec(hx || ""); if (!m) return [31, 95, 168]; const n = parseInt(m[1], 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+const lum = ([r, g, b]) => (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+function buildPdf(d, s, mode) {
+  const BLUE = hexRgb(d.couleur || s.couleur || "#1F5FA8"); const LIGHT = BLUE.map(c => Math.round(c * 0.12 + 255 * 0.88));
+  const ON = lum(BLUE) > 0.62 ? [24, 35, 46] : [255, 255, 255]; const ACC = lum(BLUE) > 0.62 ? BLUE.map(c => Math.round(c * 0.6)) : BLUE;
+  const { jsPDF } = window.jspdf; const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const W = 210, H = 297, M = 15, CW = W - 2 * M; const part = d.type === "particulier"; const t = compute(d);
+  const inv = mode === "facture" && d.facture; const F = inv ? d.facture : null; const dejaVerse = inv ? num(F.acompteVerse) : 0;
+  const need = (y, h) => { if (y + h > H - 20) { doc.addPage(); return 18; } return y; };
+  const txt = (str, x, y, o = {}) => { doc.setFont("helvetica", o.b ? "bold" : "normal"); doc.setFontSize(o.size || 9); doc.setTextColor(...(o.c || INK)); doc.text(String(str), x, y, o.align ? { align: o.align } : undefined); };
+
+  /* en-tête */
+  let y = 15;
+  if (s.logo && s.logoW) { const h = 18, w = Math.min(55, h * s.logoW / s.logoH); try { doc.addImage(s.logo, "JPEG", M, y - 2, w, h); } catch {} y += 20; }
+  else { txt(s.nom || "VIVIWORKS", M, y + 6, { b: 1, size: 20, c: ACC }); y += 12; }
+  [s.adresse, s.ville, s.numero, [s.email, s.tel].filter(Boolean).join("  |  ")].filter(Boolean).forEach(l => { txt(l, M, y, { size: 8.5, c: GREY }); y += 4; });
+  txt(inv ? "FACTURE" : "DEVIS", W - M, 21, { b: 1, size: 24, c: ACC, align: "right" });
+  txt(`N° ${inv ? F.numero : d.numero}`, W - M, 28, { b: 1, size: 10, align: "right" });
+  if (inv) {
+    txt(`Date : ${frDate(F.date)}`, W - M, 33, { size: 9, align: "right" });
+    txt(`Échéance : ${frDate(F.echeance)}`, W - M, 38, { size: 9, align: "right" });
+    txt(`Devis n° ${d.numero} du ${frDate(d.date)}`, W - M, 43, { size: 8.5, c: GREY, align: "right" });
+    if (F.payee === "oui") { doc.setDrawColor(46, 125, 79); doc.setLineWidth(0.8); doc.roundedRect(W - M - 30, 47, 30, 10, 1.5, 1.5); txt("PAYÉE", W - M - 15, 53.8, { b: 1, size: 13, c: [46, 125, 79], align: "center" }); }
+  } else {
+    txt(`Date : ${frDate(d.date)}`, W - M, 33, { size: 9, align: "right" });
+    txt(`Valable jusqu'au : ${frDate(addDays(d.date, num(s.validite) || 30))}`, W - M, 38, { size: 9, align: "right" });
+  }
+
+  /* bloc client (bordure bleue) */
+  y = Math.max(y, 42) + 4; const c = d.client;
+  const cl = [part ? null : c.societe, c.nom, c.adresse, [c.cp, c.ville].filter(Boolean).join(" "), c.tel ? "Tél. " + c.tel : null, c.email, !part && c.siret ? "SIRET / TVA : " + c.siret : null].filter(Boolean);
+  const boxH = 10 + cl.length * 4.4; const boxW = 92;
+  doc.setDrawColor(...BLUE); doc.setLineWidth(0.6); doc.roundedRect(M, y, boxW, boxH, 1.5, 1.5);
+  txt(part ? "CLIENT PARTICULIER" : "CLIENT PROFESSIONNEL", M + 4, y + 5.5, { b: 1, size: 7.5, c: ACC });
+  cl.forEach((l, i) => txt(l, M + 4, y + 10.5 + i * 4.4, { b: i === 0, size: 9 }));
+  let ry = y + 5.5; const rx = M + boxW + 8; const rw = W - M - rx;
+  if (d.objet) { txt("Objet", rx, ry, { b: 1, size: 7.5, c: ACC }); ry += 4.5; doc.setFont("helvetica", "normal"); doc.setFontSize(9); const ol = doc.splitTextToSize(d.objet, rw); doc.setTextColor(...INK); doc.text(ol, rx, ry); ry += ol.length * 4 + 3; }
+  if (c.lieu) { txt("Lieu d'intervention", rx, ry, { b: 1, size: 7.5, c: ACC }); ry += 4.5; doc.setFont("helvetica", "normal"); doc.setFontSize(9); const ll = doc.splitTextToSize(c.lieu, rw); doc.text(ll, rx, ry); ry += ll.length * 4; }
+  y = Math.max(y + boxH, ry) + 7;
+
+  /* tableau des lignes */
+  doc.autoTable({
+    startY: y, margin: { left: M, right: M, bottom: 22 },
+    head: [["Désignation", "Qté", "Unité", "PU HT", "Remise", "TVA", "Total HT", "Total TTC"]],
+    body: d.lignes.map(l => { const ht = num(l.qte) * num(l.pu) * (1 - num(l.remise) / 100);
+      return [l.designation + (l.description ? "\n" + l.description : ""), String(num(l.qte)).replace(".", ","), l.unite, eur(num(l.pu)), num(l.remise) ? pct(num(l.remise)) : "-", pct(num(l.tva)), eur(ht), eur(ht * (1 + num(l.tva) / 100))]; }),
+    styles: { font: "helvetica", fontSize: 8, cellPadding: 2, textColor: INK, lineColor: [210, 220, 230], lineWidth: 0.2, valign: "middle" },
+    headStyles: { fillColor: BLUE, textColor: ON, fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [246, 249, 252] },
+    columnStyles: { 0: { cellWidth: "auto" }, 1: { halign: "right", cellWidth: 10 }, 2: { halign: "center", cellWidth: 14 }, 3: { halign: "right", cellWidth: 21 }, 4: { halign: "right", cellWidth: 14 }, 5: { halign: "right", cellWidth: 12 }, 6: { halign: "right", cellWidth: 22 }, 7: { halign: "right", cellWidth: 23 } }
+  });
+  y = doc.lastAutoTable.finalY + 6;
+
+  /* totaux */
+  const rows = [["Total HT brut", eur(t.brut)]]; if (t.remise) rows.push(["Remise", "-" + eur(t.remise)]);
+  rows.push(["Total HT", eur(t.ht)]); t.tvas.forEach(v => rows.push([`TVA ${pct(v.taux)} (base ${eur(v.base)})`, eur(v.montant)]));
+  const tw = 88, tx = W - M - tw; y = need(y, rows.length * 6 + 22);
+  rows.forEach(([a, b]) => { txt(a, tx, y, { size: 9, c: GREY }); txt(b, W - M, y, { size: 9, align: "right" }); y += 5.5; });
+  doc.setFillColor(...BLUE); doc.rect(tx - 2, y - 3.5, tw + 2, 8, "F");
+  txt("TOTAL TTC", tx, y + 1.8, { b: 1, size: 10.5, c: ON }); txt(eur(t.ttc), W - M - 1, y + 1.8, { b: 1, size: 10.5, c: ON, align: "right" }); y += 10;
+  if (inv) {
+    if (dejaVerse) { txt("Acompte déjà versé", tx, y, { size: 9, c: GREY }); txt("-" + eur(dejaVerse), W - M, y, { size: 9, align: "right" }); y += 6; }
+    txt("NET À PAYER", tx, y, { b: 1, size: 10.5, c: ACC }); txt(eur(t.ttc - dejaVerse), W - M, y, { b: 1, size: 10.5, c: ACC, align: "right" }); y += 8;
+  } else { txt(`Acompte ${pct(num(d.acompte))} à la commande`, tx, y, { size: 9, c: GREY }); txt(eur(t.acompte), W - M, y, { b: 1, size: 9, align: "right" }); y += 8; }
+
+  /* notes */
+  if (d.notes && d.notes.trim()) { doc.setFont("helvetica", "italic"); doc.setFontSize(8.5); doc.setTextColor(...GREY); const nl = doc.splitTextToSize(d.notes.trim(), CW); y = need(y, nl.length * 4 + 4); doc.text(nl, M, y); y += nl.length * 4 + 4; }
+
+  /* conditions générales & modalités */
+  const ac = num(d.acompte), solde = 100 - ac;
+  const conds = inv ? [
+    `Facture établie suivant le devis n° ${d.numero} du ${frDate(d.date)}${F.travaux ? `, travaux réalisés le ${frDate(F.travaux)}` : ""}.`,
+    `Paiement à régler au plus tard le ${frDate(F.echeance)} par virement : ${s.titulaire || s.nom}${s.iban ? " - IBAN " + s.iban : ""}${s.bic ? " - BIC " + s.bic : ""}. Merci d'indiquer le n° ${F.numero} en référence.`,
+    "En cas de retard de paiement, des pénalités sont exigibles au taux de trois fois le taux d'intérêt légal. Pas d'escompte pour paiement anticipé.",
+    part ? null : "Indemnité forfaitaire pour frais de recouvrement en cas de retard : 40 € (art. L441-10 du Code de commerce).",
+    s.garantie ? `Garantie : ${s.garantie} à compter de la mise en service.` : null,
+    part && s.mediateur ? `Médiation de la consommation : en cas de litige, le client peut recourir gratuitement au médiateur suivant : ${s.mediateur}.` : null
+  ].filter(Boolean) : [`Devis valable ${num(s.validite) || 30} jours à compter de sa date d'émission.`,
+    part ? `Règlement : acompte de ${pct(ac)} à la signature, exigible au plus tôt 7 jours après la signature du devis (art. L221-10 du Code de la consommation)${solde > 0 ? `, solde de ${pct(solde)} à la fin des travaux` : ""}.`
+         : `Règlement : acompte de ${pct(ac)} à la commande${solde > 0 ? `, solde de ${pct(solde)} à la fin des travaux` : ""}.`,
+    `Paiement par virement : ${s.titulaire || s.nom}${s.iban ? " - IBAN " + s.iban : ""}${s.bic ? " - BIC " + s.bic : ""}.`,
+    s.garantie ? `Garantie : ${s.garantie} à compter de la mise en service.` : null,
+    ...String(s.conditions || "").split("\n").map(x => x.trim()).filter(Boolean),
+    part ? "Droit de rétractation : le client dispose d'un délai de 14 jours à compter de la signature du présent devis pour se rétracter, sans motif ni pénalité (art. L221-18 du Code de la consommation). Les modalités et le formulaire de rétractation figurent en annexe." : null,
+    part && s.mediateur ? `Médiation de la consommation : en cas de litige, le client peut recourir gratuitement au médiateur suivant : ${s.mediateur}.` : null
+  ].filter(Boolean);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+  const condLines = conds.map(cd => doc.splitTextToSize("•  " + cd, CW - 8));
+  const condH = 9 + condLines.reduce((a, l) => a + l.length * 3.6 + 1, 0) + 2;
+  y = need(y, condH + 4);
+  doc.setDrawColor(...BLUE); doc.setLineWidth(0.4); doc.setFillColor(...LIGHT); doc.roundedRect(M, y, CW, condH, 1.5, 1.5, "FD");
+  txt(inv ? "Modalités de paiement" : "Conditions générales & modalités", M + 4, y + 5.5, { b: 1, size: 9, c: ACC });
+  let cy = y + 10; condLines.forEach(l => { doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...INK); doc.text(l, M + 4, cy); cy += l.length * 3.6 + 1; });
+  y += condH + 6;
+
+  /* demande d'exécution anticipée (particulier) */
+  if (part && !inv) {
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+    const ex = doc.splitTextToSize("Je demande expressément que les travaux commencent avant la fin du délai de rétractation de 14 jours. Je reconnais qu'en cas de rétractation, je devrai payer le montant correspondant aux prestations déjà réalisées (art. L221-25 du Code de la consommation).", CW - 10);
+    y = need(y, ex.length * 3.6 + 6); doc.setDrawColor(...INK); doc.setLineWidth(0.3); doc.rect(M, y - 3, 3.6, 3.6);
+    doc.setTextColor(...INK); doc.text(ex, M + 7, y); y += ex.length * 3.6 + 5;
+  }
+
+  /* signatures : client à gauche, entreprise à droite */
+  const sw = (CW - 8) / 2, sh = 34;
+  if (!inv) { y = need(y, sh + 2);
+  doc.setDrawColor(...BLUE); doc.setLineWidth(0.4); doc.roundedRect(M, y, sw, sh, 1.5, 1.5); doc.roundedRect(M + sw + 8, y, sw, sh, 1.5, 1.5);
+  txt("Le client", M + 4, y + 5.5, { b: 1, size: 9, c: ACC });
+  txt("Date :", M + 4, y + 11, { size: 8, c: GREY });
+  txt("Signature précédée de la mention « Bon pour accord »", M + 4, y + 15.5, { size: 7.5, c: GREY });
+  txt(`Pour ${s.nom || "VIVIWORKS"}`, M + sw + 12, y + 5.5, { b: 1, size: 9, c: ACC });
+  if (s.signataire) txt(s.signataire, M + sw + 12, y + 11, { size: 8.5 });
+  txt("Date et signature", M + sw + 12, y + 15.5, { size: 7.5, c: GREY });
+  }
+
+  /* annexe rétractation (particulier) */
+  if (part && !inv) {
+    doc.addPage(); let a = 20; const who = `${s.nom || "VIVIWORKS"}, ${[s.adresse, s.ville].filter(Boolean).join(", ")}${s.email ? ", " + s.email : ""}`;
+    txt("Annexe - Droit de rétractation", M, a, { b: 1, size: 15, c: ACC }); a += 6;
+    txt(`Devis n° ${d.numero} du ${frDate(d.date)}`, M, a, { size: 9, c: GREY }); a += 8;
+    const paras = [
+      "Conformément aux articles L221-18 et suivants du Code de la consommation, le client consommateur dispose d'un délai de quatorze (14) jours pour exercer son droit de rétractation, sans avoir à motiver sa décision ni à supporter d'autres coûts que ceux prévus aux articles L221-23 à L221-25.",
+      "Le délai court à compter du jour de la signature du devis. S'il expire un samedi, un dimanche ou un jour férié ou chômé, il est prolongé jusqu'au premier jour ouvrable suivant.",
+      `Pour exercer ce droit, le client notifie sa décision à ${who}, au moyen d'une déclaration dénuée d'ambiguïté (lettre recommandée avec accusé de réception ou courrier électronique), ou en utilisant le formulaire ci-dessous. Il suffit que la décision soit envoyée avant l'expiration du délai.`,
+      `En cas de rétractation, ${s.nom || "VIVIWORKS"} rembourse la totalité des sommes versées au plus tard quatorze jours à compter de la réception de la décision, par le même moyen de paiement que celui utilisé par le client, sauf accord exprès de celui-ci.`,
+      "Si le client a expressément demandé que les travaux commencent avant la fin du délai de rétractation, il reste redevable d'un montant proportionnel aux prestations réalisées jusqu'à la communication de sa décision (art. L221-25). Le droit de rétractation ne peut plus être exercé pour une prestation pleinement exécutée avant la fin du délai dont l'exécution a commencé après accord préalable exprès du client et renoncement exprès à son droit (art. L221-28, 1°).",
+      "Aucun paiement ni aucune contrepartie ne peut être exigé du client avant l'expiration d'un délai de sept jours à compter de la signature du devis (art. L221-10).",
+      s.mediateur ? `Médiation : en cas de litige non résolu, le client peut saisir gratuitement le médiateur de la consommation : ${s.mediateur}.` : null
+    ].filter(Boolean);
+    paras.forEach(p => { doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...INK); const l = doc.splitTextToSize(p, CW); doc.text(l, M, a); a += l.length * 4.1 + 3; });
+    a += 3; doc.setLineDashPattern([2, 1.5], 0); doc.setDrawColor(...GREY); doc.setLineWidth(0.3); doc.line(M, a, W - M, a); doc.setLineDashPattern([], 0);
+    txt("Découper ou recopier ce formulaire", W - M, a - 1.5, { size: 7, c: GREY, align: "right" }); a += 8;
+    txt("Formulaire de rétractation", M, a, { b: 1, size: 12, c: ACC }); a += 5;
+    txt("(Veuillez compléter et renvoyer le présent formulaire uniquement si vous souhaitez vous rétracter du contrat.)", M, a, { size: 8, c: GREY }); a += 7;
+    const form = [
+      `À l'attention de ${who} :`,
+      `Je/Nous (*) vous notifie/notifions (*) par la présente ma/notre (*) rétractation du contrat portant sur la vente du bien (*) / pour la prestation de services (*) ci-dessous : devis n° ${d.numero} du ${frDate(d.date)}${d.objet ? " - " + d.objet : ""}.`,
+    ];
+    form.forEach(p => { doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...INK); const l = doc.splitTextToSize(p, CW); doc.text(l, M, a); a += l.length * 4.1 + 3; });
+    ["Commandé le (*) / reçu le (*) :", "Nom du (des) consommateur(s) :", "Adresse du (des) consommateur(s) :", "", "Signature du (des) consommateur(s) (uniquement en cas de notification sur papier) :", "", "Date :"].forEach(lbl => {
+      a += 7; if (lbl) txt(lbl, M, a, { size: 9 }); doc.setDrawColor(190, 200, 210); doc.setLineWidth(0.2); doc.line(lbl ? M + doc.getTextWidth(lbl) + 3 : M, a + 0.8, W - M, a + 0.8);
+    });
+    a += 8; txt("(*) Rayez la mention inutile.", M, a, { size: 8, c: GREY });
+  }
+
+  /* pied de page */
+  const n = doc.getNumberOfPages();
+  for (let i = 1; i <= n; i++) {
+    doc.setPage(i); doc.setDrawColor(...BLUE); doc.setLineWidth(0.3); doc.line(M, H - 16, W - M, H - 16);
+    txt([s.nom, s.adresse, s.ville, s.numero, s.email].filter(Boolean).join(" - "), M, H - 11.5, { size: 7, c: GREY });
+    const bank = [s.titulaire || s.nom, s.iban ? "IBAN " + s.iban : "", s.bic ? "BIC " + s.bic : ""].filter(Boolean).join("  -  ");
+    if (s.iban || s.bic) txt(bank, M, H - 7.5, { b: 1, size: 7.5, c: ACC });
+    txt(`Page ${i}/${n}`, W - M, H - 11.5, { size: 7, c: GREY, align: "right" });
+  }
+  return doc.output("arraybuffer");
+}
+
+/* ordre du dossier : fiches constructeurs dans l'ordre choisi, puis le devis toujours en dernier */
+async function mergeFiches(base, ids) {
+  const { PDFDocument } = window.PDFLib; const out = await PDFDocument.create();
+  for (const id of ids) {
+    const f = fiches.find(x => x.id === id); if (!f) continue;
+    const src = await PDFDocument.load(await S.ficheBytes(f), { ignoreEncryption: true });
+    const pages = await out.copyPages(src, src.getPageIndices()); pages.forEach(p => out.addPage(p));
+  }
+  const dv = await PDFDocument.load(base);
+  (await out.copyPages(dv, dv.getPageIndices())).forEach(p => out.addPage(p));
+  return out.save();
+}
+
+function nextFactureNumber() {
+  const y = new Date().getFullYear(); const pre = `F-${y}-`;
+  const max = devisList.concat(cur ? [cur] : []).map(d => d.facture?.numero || "").filter(n => n.startsWith(pre)).map(n => parseInt(n.slice(pre.length), 10) || 0).reduce((a, b) => Math.max(a, b), 0);
+  return pre + String(max + 1).padStart(3, "0");
+}
+function ensureFacture(d) {
+  if (d.statut !== "accepte" || d.facture) return false;
+  const dt = today(); d.facture = { numero: nextFactureNumber(), date: dt, travaux: "", echeance: addDays(dt, 30), acompteVerse: "", payee: "non" };
+  return true;
+}
+function renderFact() {
+  const F = cur.facture; $("factEmpty").hidden = !!F; $("factBody").hidden = !F; if (!F) return;
+  $("fNum").value = F.numero; $("fDate").value = F.date || ""; $("fTravaux").value = F.travaux || ""; $("fEcheance").value = F.echeance || "";
+  $("fAcompte").value = F.acompteVerse || ""; $("fPayee").value = F.payee || "non"; renderFactNet();
+}
+function renderFactNet() {
+  if (!cur.facture) return; const t = compute(cur); const v = num(cur.facture.acompteVerse);
+  $("factNet").innerHTML = `<div><span>Total TTC</span><span>${eur(t.ttc)}</span></div>${v ? `<div><span>Acompte déjà versé</span><span>-${eur(v)}</span></div>` : ""}<div><span><b>Net à payer</b></span><span><b>${eur(t.ttc - v)}</b></span></div>`;
+}
+const factMap = { fDate: "date", fTravaux: "travaux", fEcheance: "echeance", fAcompte: "acompteVerse", fPayee: "payee" };
+for (const [id, k] of Object.entries(factMap)) $(id).addEventListener(id === "fPayee" ? "change" : "input", () => { if (!cur.facture) return; cur.facture[k] = $(id).value; renderFactNet(); });
+$("fPayee").addEventListener("change", () => safe(persistCur));
+async function markAccepted() {
+  readForm(); cur.statut = "accepte"; $("dStatut").value = "accepte";
+  if (ensureFacture(cur)) toast(`Devis accepté : facture ${cur.facture.numero} créée.`);
+  renderFact(); await safe(persistCur);
+}
+$("factAccept").onclick = markAccepted;
+$("dStatut").addEventListener("change", () => { if ($("dStatut").value === "accepte") markAccepted(); else { readForm(); safe(persistCur); } });
+
+/* ---- génération, aperçu, téléchargement ---- */
+function check(d) {
+  if (!d.client.nom && !d.client.societe) { toast("Indique le nom du client."); return false; }
+  if (!d.lignes.length) { toast("Ajoute au moins une ligne au devis."); return false; }
+  if (!window.jspdf || !window.PDFLib) { toast("Le moteur PDF n'est pas chargé. Recharge la page."); return false; }
+  return true;
+}
+async function makeBytes(d, mode) { let bytes = buildPdf(d, settings, mode); if (mode !== "facture" && d.fiches && d.fiches.length) bytes = await mergeFiches(bytes, d.fiches); return bytes; }
+function fileName(d, mode) {
+  const nom = (d.type === "professionnel" && d.client.societe ? d.client.societe : d.client.nom).replace(/[^\p{L}\p{N}]+/gu, "_").replace(/^_|_$/g, "") || "client";
+  return mode === "facture" ? `Facture_${d.facture.numero}_${nom}.pdf` : `Devis_${d.numero}_${nom}.pdf`;
+}
+async function download(d, mode, btn) {
+  if (!check(d)) return;
+  const label = btn ? btn.textContent : ""; if (btn) { btn.disabled = true; btn.textContent = "Préparation…"; }
+  try {
+    const bytes = await makeBytes(d, mode); const blob = new Blob([bytes], { type: "application/pdf" });
+    if (Store.downloads) await Store.downloads.save({ filename: fileName(d, mode), data: blob });
+    else { const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = fileName(d, mode); document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000); }
+    toast(mode === "facture" ? "Facture téléchargée." : "PDF téléchargé.");
+  } catch (e) {
+    console.error(e);
+    if (e && e.code === "declined") toast("Téléchargement annulé.");
+    else if (e && e.code === "rate_limited") toast("Un téléchargement est déjà en cours.");
+    else toast(e && e.message && !e.code ? e.message : "La création du PDF a échoué.");
+  } finally { if (btn) { btn.disabled = false; btn.textContent = label; } }
+}
+let pdfjsReady = null;
+function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = () => rej(new Error("script")); document.head.appendChild(s); }); }
+function loadPdfJs() {
+  if (!pdfjsReady) pdfjsReady = (async () => {
+    const base = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+    await loadScript(base + "pdf.worker.min.js"); await loadScript(base + "pdf.min.js");
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = base + "pdf.worker.min.js"; return window.pdfjsLib;
+  })().catch(e => { pdfjsReady = null; throw e; });
+  return pdfjsReady;
+}
+let viewing = null;
+const Z_MIN = 1, Z_MAX = 4;
+let zoom = 1, baseW = 0, reT = null;
+function pageWidth() { return baseW * zoom; }
+function sizeCanvases() {
+  $("viewerPages").querySelectorAll("canvas").forEach(c => { const r = c.height / c.width; c.style.width = pageWidth() + "px"; c.style.height = pageWidth() * r + "px"; });
+  $("zLbl").textContent = Math.round(zoom * 100) + " %";
+  $("zOut").disabled = zoom <= Z_MIN + 0.001; $("zIn").disabled = zoom >= Z_MAX - 0.001;
+}
+async function renderPages() {
+  const v = viewing; if (!v || !v.pdf) return; const pages = $("viewerPages");
+  const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+  for (let i = 1; i <= v.pdf.numPages; i++) {
+    if (viewing !== v) return;
+    const page = await v.pdf.getPage(i); const vp1 = page.getViewport({ scale: 1 });
+    const target = Math.min(pageWidth() * dpr, 3600); const vp = page.getViewport({ scale: target / vp1.width });
+    let c = pages.querySelector(`canvas[data-p="${i}"]`);
+    if (c && Math.abs(c.width - vp.width) < 2) continue;
+    const off = document.createElement("canvas"); off.width = vp.width; off.height = vp.height;
+    await page.render({ canvasContext: off.getContext("2d"), viewport: vp }).promise;
+    if (viewing !== v) return;
+    if (!c) { c = document.createElement("canvas"); c.dataset.p = i; c.setAttribute("aria-label", `Page ${i}`); pages.appendChild(c); }
+    c.width = off.width; c.height = off.height; c.getContext("2d").drawImage(off, 0, 0);
+    sizeCanvases();
+  }
+}
+/* zoom en gardant le point visé au même endroit */
+function setZoom(z, cx, cy) {
+  const pages = $("viewerPages"); z = Math.max(Z_MIN, Math.min(Z_MAX, z)); if (Math.abs(z - zoom) < 0.001) return;
+  const rect = pages.getBoundingClientRect();
+  const px = cx ?? rect.width / 2, py = cy ?? rect.height / 2;
+  const fx = (pages.scrollLeft + px) / (pages.scrollWidth || 1), fy = (pages.scrollTop + py) / (pages.scrollHeight || 1);
+  zoom = z; sizeCanvases();
+  pages.scrollLeft = fx * pages.scrollWidth - px; pages.scrollTop = fy * pages.scrollHeight - py;
+  clearTimeout(reT); reT = setTimeout(renderPages, 250);
+}
+$("zIn").onclick = () => setZoom(zoom * 1.4);
+$("zOut").onclick = () => setZoom(zoom / 1.4);
+$("zReset").onclick = () => setZoom(zoom > 1.01 ? 1 : 2);
+/* pincer pour zoomer sur téléphone */
+let pinch = null, lastTap = 0;
+const vpg = $("viewerPages");
+const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+const mid = (t, r) => [(t[0].clientX + t[1].clientX) / 2 - r.left, (t[0].clientY + t[1].clientY) / 2 - r.top];
+vpg.addEventListener("touchstart", e => {
+  if (e.touches.length === 2) { pinch = { d: dist(e.touches), z: zoom }; e.preventDefault(); }
+  else if (e.touches.length === 1) {
+    const now = Date.now(); if (now - lastTap < 300) { const r = vpg.getBoundingClientRect(); setZoom(zoom > 1.01 ? 1 : 2.5, e.touches[0].clientX - r.left, e.touches[0].clientY - r.top); e.preventDefault(); lastTap = 0; }
+    else lastTap = now;
+  }
+}, { passive: false });
+vpg.addEventListener("touchmove", e => {
+  if (pinch && e.touches.length === 2) { e.preventDefault(); const [x, y] = mid(e.touches, vpg.getBoundingClientRect()); setZoom(pinch.z * dist(e.touches) / pinch.d, x, y); }
+}, { passive: false });
+vpg.addEventListener("touchend", e => { if (e.touches.length < 2) pinch = null; });
+/* Ctrl + molette ou pincement sur pavé tactile (ordinateur) */
+vpg.addEventListener("wheel", e => { if (!e.ctrlKey) return; e.preventDefault(); const r = vpg.getBoundingClientRect(); setZoom(zoom * Math.exp(-e.deltaY / 300), e.clientX - r.left, e.clientY - r.top); }, { passive: false });
+
+async function preview(d, mode) {
+  if (!check(d)) return;
+  const pages = $("viewerPages"); $("viewerTitle").textContent = mode === "facture" ? `Facture ${d.facture.numero}` : `Devis ${d.numero}`;
+  pages.innerHTML = `<p>Préparation de l'aperçu…</p>`; $("viewer").hidden = false; document.body.style.overflow = "hidden";
+  const v = { d, mode, pdf: null }; viewing = v; zoom = 1;
+  baseW = Math.min(820, pages.clientWidth - 20); sizeCanvases();
+  try {
+    const [lib, bytes] = await Promise.all([loadPdfJs(), makeBytes(d, mode)]);
+    const pdf = await lib.getDocument({ data: new Uint8Array(bytes) }).promise;
+    if (viewing !== v) return;
+    v.pdf = pdf; pages.innerHTML = ""; await renderPages();
+  } catch (e) { console.error(e); if (viewing === v) pages.innerHTML = `<p>L'aperçu n'a pas pu s'afficher. Tu peux quand même télécharger le PDF.</p>`; }
+}
+window.addEventListener("resize", () => { if (viewing && viewing.pdf) { baseW = Math.min(820, $("viewerPages").clientWidth - 20); sizeCanvases(); clearTimeout(reT); reT = setTimeout(renderPages, 250); } });
+function closeViewer() { $("viewer").hidden = true; $("viewerPages").innerHTML = ""; document.body.style.overflow = ""; viewing = null; zoom = 1; }
+$("viewerClose").onclick = closeViewer;
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("viewer").hidden) closeViewer(); });
+$("viewerDl").onclick = () => viewing && download(viewing.d, viewing.mode, $("viewerDl"));
+$("previewPdf").onclick = () => { readForm(); preview(cur, "devis"); };
+$("exportPdf").onclick = async () => { readForm(); if (!check(cur)) return; await safe(persistCur); download(cur, "devis", $("exportPdf")); };
+$("factPreview").onclick = () => { readForm(); preview(cur, "facture"); };
+$("factPdf").onclick = async () => { readForm(); await safe(persistCur); download(cur, "facture", $("factPdf")); };
+
+/* ---- couleurs du devis ---- */
+const COULEURS = [["Bleu", "#1F5FA8"], ["Bleu ciel", "#1E9BD7"], ["Bleu marine", "#14305A"], ["Turquoise", "#0E9A93"], ["Vert", "#2E7D4F"], ["Vert vif", "#22A447"],
+  ["Rouge vif", "#E01E37"], ["Bordeaux", "#8C1D2C"], ["Orange", "#E8740C"], ["Jaune", "#F2B705"], ["Violet", "#6B3FA0"], ["Rose", "#D6336C"], ["Gris", "#5F6B76"], ["Noir", "#1E2328"]];
+function curColor() { return (cur && cur.couleur) || settings.couleur || "#1F5FA8"; }
+function renderSwatches() {
+  const c = curColor().toUpperCase();
+  $("swatches").innerHTML = COULEURS.map(([n, hx]) => `<button type="button" class="sw" role="radio" aria-checked="${hx.toUpperCase() === c}" data-col="${hx}"><i style="background:${hx}"></i>${n}</button>`).join("");
+  $("colorCustom").value = c.toLowerCase();
+}
+function pickColor(hx) {
+  cur.couleur = hx; settings.couleur = hx; renderSwatches(); scheduleSave();
+  safe(() => S.saveSettings({ ...settings }));
+  const n = COULEURS.find(([, x]) => x.toUpperCase() === hx.toUpperCase()); toast(`Couleur ${n ? n[0].toLowerCase() : "personnalisée"} appliquée au devis.`);
+}
+$("swatches").onclick = e => { const b = e.target.closest("button[data-col]"); if (b) pickColor(b.dataset.col); };
+$("colorCustom").addEventListener("change", e => pickColor(e.target.value.toUpperCase()));
+
+/* ---- onglet Envoyer ---- */
+const clientNom = d => (d.type === "professionnel" && d.client.societe ? d.client.societe : d.client.nom) || "Sans nom";
+function defaultMail(d) {
+  const part = d.type === "particulier";
+  return {
+    subject: `Devis n° ${d.numero}${d.objet ? " - " + d.objet : ""} - ${settings.nom || "VIVIWORKS"}`,
+    body: `Bonjour${d.client.nom ? " " + d.client.nom : ""},\n\nVeuillez trouver ci-joint notre devis n° ${d.numero} d'un montant de ${eur(compute(d).ttc)} TTC${d.fiches.length ? ", accompagné des fiches techniques du matériel proposé" : ""}.\n\nCe devis est valable ${num(settings.validite) || 30} jours. Pour l'accepter, il vous suffit de nous le retourner daté et signé avec la mention « Bon pour accord ».${part ? " Vous disposez d'un délai de rétractation de 14 jours, détaillé en annexe." : ""}\n\nJe reste à votre disposition pour toute question.\n\nCordialement,\n${settings.signataire || ""}\n${settings.nom || "VIVIWORKS"}${settings.tel ? "\n" + settings.tel : ""}${settings.email ? "\n" + settings.email : ""}`
+  };
+}
+function renderEnvoi() {
+  if (!cur) return;
+  const others = [...devisList].filter(d => d.id !== cur.id).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  $("eDevis").innerHTML = `<option value="${cur.id}">${esc(cur.numero)} - ${esc(clientNom(cur))} (ouvert)</option>` + others.map(d => `<option value="${d.id}">${esc(d.numero)} - ${esc(clientNom(d))}</option>`).join("");
+  $("eDevis").value = cur.id;
+  $("eInfo").textContent = `${eur(compute(cur).ttc)} TTC · ${CATS[cur.categorie] || ""} · ${STATUTS[cur.statut] || ""}${cur.envoyeLe ? ` · déjà envoyé le ${frDate(cur.envoyeLe)}` : ""}`;
+  cur.fiches = cur.fiches.filter(id => fiches.some(f => f.id === id));
+  $("eOrder").innerHTML = cur.fiches.map((id, i) => { const f = fiches.find(x => x.id === id);
+    return `<li><span class="nm">${esc(f.nom)}<small>${esc(f.marque)}</small></span>
+      <button class="btn ghost" type="button" data-eo="up" data-i="${i}" ${i === 0 ? "disabled" : ""} aria-label="Monter">↑</button>
+      <button class="btn ghost" type="button" data-eo="down" data-i="${i}" ${i === cur.fiches.length - 1 ? "disabled" : ""} aria-label="Descendre">↓</button>
+      <button class="btn ghost danger" type="button" data-eo="del" data-i="${i}" aria-label="Retirer">✕</button></li>`; }).join("")
+    + `<li class="last"><span class="nm"><b>Devis n° ${esc(cur.numero)}</b><small>Toujours en dernier${cur.type === "particulier" ? ", avec l'annexe de rétractation" : ""}</small></span></li>`;
+  const avail = fiches.filter(f => !cur.fiches.includes(f.id));
+  $("eAddSel").innerHTML = avail.length ? brands().map(b => { const fs = avail.filter(f => f.marque === b); return fs.length ? `<optgroup label="${esc(b)}">${fs.map(f => `<option value="${f.id}">${esc(f.nom)}</option>`).join("")}</optgroup>` : ""; }).join("")
+    : `<option value="">${fiches.length ? "Toutes les fiches sont déjà ajoutées" : "Aucune fiche : ajoute-en dans Fiches marques"}</option>`;
+  $("eAdd").disabled = !avail.length;
+  const m = defaultMail(cur);
+  if (!cur.mail || cur.mail.devisId !== cur.id) cur.mail = { devisId: cur.id, to: cur.client.email || "", subject: m.subject, body: m.body };
+  $("eTo").value = cur.mail.to; $("eSubject").value = cur.mail.subject; $("eBody").value = cur.mail.body;
+}
+$("eOrder").onclick = e => {
+  const b = e.target.closest("button[data-eo]"); if (!b) return; const i = +b.dataset.i; const a = cur.fiches;
+  if (b.dataset.eo === "up" && i > 0) [a[i - 1], a[i]] = [a[i], a[i - 1]];
+  if (b.dataset.eo === "down" && i < a.length - 1) [a[i + 1], a[i]] = [a[i], a[i + 1]];
+  if (b.dataset.eo === "del") a.splice(i, 1);
+  renderEnvoi(); renderFicheChoice(); safe(persistCur);
+};
+$("eAdd").onclick = () => { const id = $("eAddSel").value; if (!id) return; cur.fiches.push(id); renderEnvoi(); renderFicheChoice(); safe(persistCur); };
+$("eDevis").onchange = async () => {
+  const d = devisList.find(x => x.id === $("eDevis").value); if (!d || d.id === cur.id) return;
+  await flushSave(); cur = norm(JSON.parse(JSON.stringify(d))); loadForm(); setSaveState("ok", "Enregistré dans la base"); renderEnvoi();
+};
+["eTo", "eSubject", "eBody"].forEach(id => $(id).addEventListener("input", () => { cur.mail = { devisId: cur.id, to: $("eTo").value, subject: $("eSubject").value, body: $("eBody").value }; }));
+$("ePreview").onclick = () => preview(cur, "devis");
+$("eDownload").onclick = async () => { await safe(persistCur); download(cur, "devis", $("eDownload")); };
+async function copyText(t) { try { await navigator.clipboard.writeText(t); return true; } catch { return false; } }
+$("eSend").onclick = async () => {
+  if (!check(cur)) return; const btn = $("eSend"); const st = $("eStatus"); btn.disabled = true; btn.textContent = "Préparation…";
+  try {
+    const bytes = await makeBytes(cur, "devis"); const name = fileName(cur, "devis");
+    const file = new File([bytes], name, { type: "application/pdf" });
+    const text = `${$("eSubject").value}\n\n${$("eBody").value}`;
+    let shared = false;
+    if (navigator.canShare && navigator.share) {
+      try { if (navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: $("eSubject").value, text: $("eBody").value }); shared = true; } }
+      catch (e) { if (e && e.name === "AbortError") { st.textContent = "Envoi annulé."; return; } }
+    }
+    if (shared) st.textContent = "Dossier partagé. Choisis ton application de mail et vérifie le destinataire.";
+    else {
+      if (Store.downloads) await Store.downloads.save({ filename: name, data: new Blob([bytes], { type: "application/pdf" }) });
+      else { const url = URL.createObjectURL(file); const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000); }
+      const copied = await copyText($("eBody").value);
+      st.textContent = `Le dossier « ${name} » est téléchargé${copied ? " et le message est copié" : ""}. Ouvre ton application de mail, écris à ${$("eTo").value || "ton client"}, colle le message${copied ? "" : " ci-dessus"} et joins le PDF.`;
+    }
+    cur.envoyeLe = today(); await safe(persistCur); renderEnvoi();
+  } catch (e) {
+    console.error(e);
+    st.textContent = e && e.code === "declined" ? "Téléchargement annulé." : "La préparation du dossier a échoué. Vérifie les fiches jointes.";
+  } finally { btn.disabled = false; btn.textContent = "Envoyer"; }
+};
+
+/* ---- onglet Facturation ---- */
+let factF = "";
+function renderFactures() {
+  const all = devisList.filter(d => d.facture);
+  const ttc = d => compute(d).ttc; const reste = d => d.facture.payee === "oui" ? 0 : ttc(d) - num(d.facture.acompteVerse);
+  const tot = all.reduce((a, d) => a + ttc(d), 0); const due = all.reduce((a, d) => a + reste(d), 0);
+  $("factStats").innerHTML = `
+    <div class="stat enc"><div class="n">${all.length}</div><div class="l">Factures</div><div class="a">${eur(tot)} TTC</div></div>
+    <div class="stat acc"><div class="n">${all.filter(d => d.facture.payee === "oui").length}</div><div class="l">Payées</div><div class="a">${eur(tot - due)}</div></div>
+    <div class="stat ref"><div class="n">${all.filter(d => d.facture.payee !== "oui").length}</div><div class="l">À encaisser</div><div class="a">${eur(due)}</div></div>`;
+  document.querySelectorAll("#factFilter button").forEach(b => b.setAttribute("aria-pressed", b.dataset.ff === factF));
+  const list = all.filter(d => !factF || (d.facture.payee || "non") === factF).sort((a, b) => (b.facture.numero || "").localeCompare(a.facture.numero || ""));
+  if (!list.length) { $("factList").innerHTML = `<p class="empty">${all.length ? "Aucune facture ici." : "Aucune facture pour l'instant. Passe un devis en « Accepté » pour créer sa facture."}</p>`; return; }
+  $("factList").innerHTML = list.map(d => {
+    const nom = d.type === "professionnel" && d.client.societe ? d.client.societe : d.client.nom; const pay = d.facture.payee === "oui" ? "oui" : "non";
+    const late = pay === "non" && d.facture.echeance && d.facture.echeance < today();
+    return `<div class="item"><div style="min-width:0"><strong>${esc(d.facture.numero)}</strong><span class="st ${pay}">${pay === "oui" ? "Payée" : late ? "En retard" : "À encaisser"}</span>
+      <div class="meta">${esc(nom || "Sans nom")} · ${CATS[d.categorie]} · devis ${esc(d.numero)}</div>
+      <div class="meta">${frDate(d.facture.date)} · ${eur(ttc(d))} TTC${pay === "non" ? ` · reste ${eur(reste(d))} (échéance ${frDate(d.facture.echeance)})` : ""}</div>
+      <label style="margin-top:6px;max-width:170px">Paiement<select data-pay="${d.id}"><option value="non" ${pay === "non" ? "selected" : ""}>À encaisser</option><option value="oui" ${pay === "oui" ? "selected" : ""}>Payée</option></select></label></div>
+      <div class="actions" style="flex-direction:column;align-items:flex-end"><button class="btn ghost" data-f="view" data-id="${d.id}">Aperçu</button><button class="btn ghost" data-f="dl" data-id="${d.id}">PDF</button><button class="btn ghost" data-f="open" data-id="${d.id}">Ouvrir</button></div></div>`;
+  }).join("");
+}
+$("factFilter").onclick = e => { const b = e.target.closest("button[data-ff]"); if (!b) return; factF = b.dataset.ff; renderFactures(); };
+$("factList").addEventListener("click", e => {
+  const b = e.target.closest("button[data-f]"); if (!b) return; const d = devisList.find(x => x.id === b.dataset.id);
+  if (b.dataset.f === "view") preview(norm(JSON.parse(JSON.stringify(d))), "facture");
+  if (b.dataset.f === "dl") download(norm(JSON.parse(JSON.stringify(d))), "facture", b);
+  if (b.dataset.f === "open") { cur = norm(JSON.parse(JSON.stringify(d))); loadForm(); showTab("devis"); setTimeout(() => $("factCard").scrollIntoView({ block: "start" }), 50); }
+});
+$("factList").addEventListener("change", async e => {
+  const id = e.target.dataset.pay; if (!id) return; const d = devisList.find(x => x.id === id); d.facture.payee = e.target.value;
+  if (cur && cur.id === id && cur.facture) { cur.facture.payee = d.facture.payee; $("fPayee").value = d.facture.payee; }
+  try { await S.saveDevis(JSON.parse(JSON.stringify(d))); renderFactures(); toast(`Facture ${d.facture.numero} : ${d.facture.payee === "oui" ? "payée" : "à encaisser"}.`); } catch { toast("La mise à jour a échoué."); }
+});
+
+/* ---------- démarrage ---------- */
+async function init() {
+  newDevis(); loadSettingsForm(); renderFicheLib(); renderHisto();
+  const [db, assets, downloads, sample] = await Promise.all([useCap("db"), useCap("assets"), useCap("downloads"), useCap("sample")]);
+  Store.db = db; Store.assets = assets; Store.downloads = downloads; Store.sample = sample;
+  $("modeLbl").textContent = db ? "Synchronisé avec ton compte" : "Enregistré sur cet appareil";
+  const saved = await S.getSettings(); if (saved) settings = { ...DEFAULT_SETTINGS, ...saved };
+  if (!settings.iban) settings.iban = DEFAULT_SETTINGS.iban; if (!settings.bic) settings.bic = DEFAULT_SETTINGS.bic;
+  fiches = await S.listFiches(); devisList = await S.listDevis(); clients = await S.listClients();
+  for (const d of devisList.map(norm).filter(x => x.statut === "accepte" && !x.facture).sort((a, b) => (a.date || "").localeCompare(b.date || ""))) { ensureFacture(d); await safe(() => S.saveDevis(JSON.parse(JSON.stringify(d)))); }
+  for (const d of devisList.filter(x => !x.clientId)) { norm(d); await safe(async () => { await syncClient(d); if (d.clientId) await S.saveDevis(JSON.parse(JSON.stringify(d))); }); }
+  const fresh = !$("cNom").value && cur.lignes.length === 1 && !cur.lignes[0].designation;
+  if (fresh) newDevis(); else { cur.fiches = cur.fiches.filter(id => fiches.some(f => f.id === id)); renderFicheChoice(); }
+  loadSettingsForm(); renderFicheLib(); renderHisto();
+  if (!Store.downloads) $("exportPdf").title = "Téléchargement disponible dans claude.ai";
+}
+init();
+})();
+</script>
+</body>
+</html>
