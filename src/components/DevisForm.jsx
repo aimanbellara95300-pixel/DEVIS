@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { COULEURS, EXP_CATS, MARGES, TVA_OPTIONS, TVAS, UNITES } from "../lib/constants.js";
-import { achatHT, compute, lineHT, lineMarge, realMargin } from "../lib/calc.js";
+import { achatHT, blankLine, compute, lineHT, lineMarge, realMargin } from "../lib/calc.js";
 import { cliName } from "../lib/calc.js";
 import { eur, num, pct, today, uid } from "../lib/format.js";
 import { useApp } from "../context/AppState.jsx";
@@ -249,7 +249,7 @@ export default function DevisForm() {
         ))}
         {!d.lignes.length && <p className="empty">Aucune ligne. Ajoute la première ligne du devis.</p>}
         <div className="actions">
-          <button className="btn" type="button" onClick={() => app.touch((x) => { x.lignes.push({ ...app.cur ? {} : {}, id: uid(), designation: "", description: "", qte: 1, unite: "u", pu: 0, remise: 0, tva: x.tvaDef ?? 20, achat: "", achatMode: "TTC", achatTva: 20, marge: 0 }); return x; })}>+ Ajouter une ligne</button>
+          <button className="btn" type="button" onClick={() => app.touch((x) => { x.lignes.push(blankLine(x.tvaDef ?? 20)); return x; })}>+ Ajouter une ligne</button>
         </div>
       </div>
 

@@ -86,9 +86,11 @@ export function AppProvider({ children }) {
   const fichesRef = useRef(fiches);
   const curRef = useRef(cur);
   const dirtyRef = useRef(false);
+  const editGen = useRef(0);
   const saveQ = useRef(Promise.resolve());
   const toastT = useRef(0);
   const autoT = useRef(0);
+  const persistCurRef = useRef(async () => {});
 
   useEffect(() => { settingsRef.current = settings; }, [settings]);
   useEffect(() => { listRef.current = devisList; }, [devisList]);
@@ -104,6 +106,7 @@ export function AppProvider({ children }) {
 
   const markDirty = useCallback(() => {
     dirtyRef.current = true;
+    editGen.current += 1;
     setSave({ kind: "dirty", text: "Modifications non enregistrées" });
   }, []);
 
@@ -136,31 +139,45 @@ export function AppProvider({ children }) {
 
   const persistCur = useCallback(async () => {
     const run = async () => {
+      const gen = editGen.current;
       let d = structuredClone(curRef.current);
       if (!hasContent(d)) return;
       await syncClient(d);
       d.maj = Date.now();
       await dbSaveDevis(d);
-      curRef.current = d;
-      setCur(d);
       const list = listRef.current.slice();
       const i = list.findIndex((x) => x.id === d.id);
       if (i >= 0) list[i] = d;
       else list.push(d);
       listRef.current = list;
       setDevisList(list);
-      dirtyRef.current = false;
-      setSave({ kind: "ok", text: `Enregistré à ${hhmm()}` });
+      if (curRef.current?.id === d.id && editGen.current === gen) {
+        curRef.current = d;
+        setCur(d);
+        dirtyRef.current = false;
+        setSave({ kind: "ok", text: `Enregistré à ${hhmm()}` });
+        return;
+      }
+      if (curRef.current?.id === d.id) {
+        setSave({ kind: "dirty", text: "Modifications non enregistrées" });
+        clearTimeout(autoT.current);
+        autoT.current = setTimeout(() => {
+          if (dirtyRef.current && hasContent(curRef.current)) persistCurRef.current().catch(() => {});
+        }, 600);
+      }
     };
-    saveQ.current = saveQ.current.catch(() => {}).then(run);
+    const queued = saveQ.current.catch(() => {}).then(run);
+    saveQ.current = queued;
     try {
-      await saveQ.current;
+      await queued;
     } catch (e) {
       console.error(e);
       setSave({ kind: "dirty", text: e.message || "Échec de l'enregistrement" });
       throw e;
     }
   }, [syncClient]);
+
+  persistCurRef.current = persistCur;
 
   const scheduleSave = useCallback(() => {
     clearTimeout(autoT.current);
@@ -236,13 +253,15 @@ export function AppProvider({ children }) {
       listRef.current = list;
       clientsRef.current = cls;
       fichesRef.current = metas;
-      const start = freshDevis(list, s, "installation");
+      const last = list.slice().sort((a, b) => (b.maj || 0) - (a.maj || 0))[0];
+      const start = last ? norm(structuredClone(last)) : freshDevis(list, s, "installation");
       curRef.current = start;
       setSettings(s);
       setDevisList(list);
       setClients(cls);
       setFiches(metas);
       setCur(start);
+      setSave(last ? { kind: "ok", text: "Enregistré dans la base" } : { kind: "", text: "Pas encore enregistré" });
       setReady(true);
     })().catch((e) => {
       console.error(e);

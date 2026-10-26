@@ -35,7 +35,17 @@ npm run dev
 
 Déploiement sans Git : `npm run build`, puis glisser le dossier `dist` dans Netlify Drop. Les redirections du fichier `public/_redirects` sont copiées dans `dist`.
 
+## Variables d'environnement requises
+
+| Variable | Description |
+|---|---|
+| `VITE_SUPABASE_URL` | URL de ton projet Supabase (ex: `https://xxxx.supabase.co`) |
+| `VITE_SUPABASE_ANON_KEY` | Clé publique `anon` de ton projet Supabase |
+
+> ⚠️ Ne commite jamais le fichier `.env`. Il est déjà dans `.gitignore`.
+
 ## À savoir
 
 - Devis, clients, fiches PDF et réglages sont dans Supabase. Au premier login, ce qui était encore enregistré dans ce navigateur est copié si le compte est vide.
 - La lecture automatique des photos d'offres fournisseur n'est pas incluse. Les lignes et les montants se saisissent à la main. La photo d'une facture de dépense est enregistrée avec le devis.
+- En cas de connexion perdue, les devis sont sauvegardés localement (IndexedDB) et synchronisés dès la reconnexion.

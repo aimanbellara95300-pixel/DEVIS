@@ -59,6 +59,11 @@ create policy "devis_own" on public.devis
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
+grant select, insert, update, delete on table public.settings to authenticated;
+grant select, insert, update, delete on table public.clients to authenticated;
+grant select, insert, update, delete on table public.devis to authenticated;
+grant select, insert, update, delete on table public.fiches to authenticated;
+
 drop policy if exists "fiches_own" on public.fiches;
 create policy "fiches_own" on public.fiches
   for all to authenticated
