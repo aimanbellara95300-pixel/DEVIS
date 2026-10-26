@@ -375,11 +375,10 @@ export function AppProvider({ children }) {
       toast("Devis effacé.");
       return true;
     }
-    if (d.facture) {
-      toast(`Impossible d'effacer : la facture ${d.facture.numero} a été émise. Passe plutôt le devis en « Refusé ».`);
-      return false;
-    }
-    if (!confirm(`Effacer définitivement le devis ${d.numero} de la base ? Cette action est irréversible.`)) return false;
+    const confirmation = d.facture
+      ? `Effacer définitivement le devis ${d.numero} et la facture ${d.facture.numero} de la base ? Cette action est irréversible.`
+      : `Effacer définitivement le devis ${d.numero} de la base ? Cette action est irréversible.`;
+    if (!confirm(confirmation)) return false;
     await dbDelDevis(d.id);
     const list = listRef.current.filter((x) => x.id !== d.id);
     listRef.current = list;
@@ -391,7 +390,9 @@ export function AppProvider({ children }) {
       setCur(n);
       setSave({ kind: "", text: "Pas encore enregistré" });
     }
-    toast(`Devis ${d.numero} effacé.`);
+    toast(d.facture
+      ? `Devis ${d.numero} et facture ${d.facture.numero} effacés.`
+      : `Devis ${d.numero} effacé.`);
     return true;
   }, [toast]);
 
