@@ -1198,7 +1198,7 @@ function buildPdf(d, s, mode) {
   }
 
   /* bloc client (bordure bleue) */
-  y = Math.max(y, 42) + 4; const c = d.client;
+  y = Math.max(y, 42) + 2; const c = d.client;
   const cl = [part ? null : c.societe, c.nom, c.adresse, [c.cp, c.ville].filter(Boolean).join(" "), c.tel ? "Tél. " + c.tel : null, c.email, !part && c.siret ? "SIRET / TVA : " + c.siret : null].filter(Boolean);
   const boxH = 10 + cl.length * 4.4; const boxW = 92;
   doc.setDrawColor(...BLUE); doc.setLineWidth(0.6); doc.roundedRect(M, y, boxW, boxH, 1.5, 1.5);

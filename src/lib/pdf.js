@@ -79,7 +79,7 @@ export function buildPdf(d, s, mode) {
     txt(`Valable jusqu'au : ${frDate(addDays(d.date, num(s.validite) || 30))}`, W - M, 38, { size: 9, align: "right" });
   }
 
-  y = Math.max(y, 42) + 4;
+  y = Math.max(y, 42) + 2;
   const c = d.client;
   const cl = [
     part ? null : c.societe,
