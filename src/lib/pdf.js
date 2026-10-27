@@ -81,13 +81,14 @@ export function buildPdf(d, s, mode) {
   txt(part ? "CLIENT PARTICULIER" : "CLIENT PROFESSIONNEL", M + 4, y + 5.5, { b: 1, size: 7.5, c: ACC });
   cl.forEach((l, i) => txt(l, M + 4, y + 10.5 + i * 4.4, { b: i === 0, size: 9 }));
   const rx = M + boxW + 8;
-  const rw = W - M - rx;
+  const rw = W - M - rx - 8;
+  const companyX = rx + 4;
   let companyY = y + 5.5;
   if (s.logo && s.logoW && s.logoH) {
     const logoH = 12;
     const logoW = Math.min(rw, 40, (logoH * s.logoW) / s.logoH);
     try {
-      doc.addImage(s.logo, "JPEG", rx, companyY - 3, logoW, logoH);
+      doc.addImage(s.logo, "JPEG", companyX, companyY - 3, logoW, logoH);
       companyY += logoH + 1;
     } catch {
       /* logo illisible */
@@ -97,7 +98,7 @@ export function buildPdf(d, s, mode) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.setTextColor(...ACC);
-    doc.text(nameLines, rx, companyY);
+    doc.text(nameLines, companyX, companyY);
     companyY += nameLines.length * 5 + 1;
   }
   const companyLines = [s.adresse, s.ville, s.numero, [s.email, s.tel].filter(Boolean).join("  |  ")].filter(Boolean);
@@ -106,10 +107,14 @@ export function buildPdf(d, s, mode) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8.5);
     doc.setTextColor(...GREY);
-    doc.text(wrapped, rx, companyY);
+    doc.text(wrapped, companyX, companyY);
     companyY += wrapped.length * 3.8;
   });
-  let ry = Math.max(y + boxH, companyY) + 4;
+  const companyBoxH = Math.max(boxH, companyY - y + 2);
+  doc.setDrawColor(...BLUE);
+  doc.setLineWidth(0.6);
+  doc.roundedRect(rx, y, W - M - rx, companyBoxH, 1.5, 1.5);
+  let ry = y + companyBoxH + 4;
   if (d.objet) {
     txt("Objet", M, ry, { b: 1, size: 7.5, c: ACC });
     ry += 4.5;
