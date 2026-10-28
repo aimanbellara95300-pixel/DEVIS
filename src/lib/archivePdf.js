@@ -1,4 +1,5 @@
 import { loadPdf } from "./images.js";
+import { blankLine, lineHT } from "./calc.js";
 
 function linesFrom(items, maxX) {
   const rows = [];
@@ -59,14 +60,100 @@ function findNumber(text) {
 }
 
 function extractTotals(lines) {
-  const htLine = lines.find((line) => /\btotal\s*(?:g[ée]n[ée]ral\s*)?ht\b/i.test(line) && !/\bbrut\b/i.test(line))
-    || lines.find((line) => /\btotal\s*(?:g[ée]n[ée]ral\s*)?ht\b/i.test(line));
-  const ttcLine = lines.find((line) => /\btotal\s*(?:g[ée]n[ée]ral\s*)?ttc\b/i.test(line));
-  const ht = htLine ? money(htLine.replace(/^.*?\bht\b/i, "")) : "";
-  const ttc = ttcLine ? money(ttcLine.replace(/^.*?\bttc\b/i, "")) : "";
+  const amountAfter = (pattern, excluded = null) => lines
+    .filter((line) => pattern.test(line) && (!excluded || !excluded.test(line)))
+    .reverse()
+    .map((line) => money(line.replace(/^.*?\b(?:ht|ttc)\b/i, "")))
+    .find(Boolean) || "";
+  const ht = amountAfter(/\btotal\s*(?:g[ée]n[ée]ral\s*)?ht\b/i, /\bbrut\b/i);
+  const ttc = amountAfter(/\btotal\s*(?:g[ée]n[ée]ral\s*)?ttc\b/i);
   const rates = [...new Set([...lines.join(" ").matchAll(/\b(?:TVA\s*)?(\d{1,2}(?:[,.]\d+)?)\s*%/gi)].map((match) => match[1].replace(",", ".")))];
   const tva = rates.length === 1 && ["0", "5.5", "10", "20"].includes(rates[0]) ? rates[0] : "";
   return { ht, ttc, tva };
+}
+
+function normalizeText(text) {
+  return text.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "").replace(/\s+/g, " ").trim();
+}
+
+function extractTableRows(items) {
+  const rows = [];
+  for (const item of items) {
+    const text = item.str?.trim();
+    if (!text) continue;
+    const y = item.transform[5];
+    let row = rows.find((candidate) => Math.abs(candidate.y - y) < 2.5);
+    if (!row) {
+      row = { y, parts: [] };
+      rows.push(row);
+    }
+    row.parts.push({ x: item.transform[4], text });
+  }
+  rows.sort((a, b) => b.y - a.y);
+
+  const extracted = [];
+  let columns = null;
+  for (const row of rows) {
+    const text = normalizeText(row.parts.map((part) => part.text).join(" "));
+    if (/\bdesignation\b/.test(text) && /\bqte\b/.test(text) && /\bunite\b/.test(text) && /\bremise\b/.test(text) && /\btva\b/.test(text)) {
+      const aliases = [
+        ["designation", /\bdesignation\b/],
+        ["qte", /\bqte\b|quantite/],
+        ["unite", /\bunite\b/],
+        ["pu", /\bpu\b/],
+        ["remise", /\bremise\b/],
+        ["tva", /\btva\b/],
+        ["ht", /total ht/],
+        ["ttc", /total ttc/]
+      ];
+      const found = aliases.map(([key, regex]) => {
+        const part = row.parts.find((candidate) => regex.test(normalizeText(candidate.text)));
+        return part ? { key, x: part.x } : null;
+      }).filter(Boolean).sort((a, b) => a.x - b.x);
+      if (found.some((entry) => entry.key === "designation") && found.some((entry) => entry.key === "qte") && found.some((entry) => entry.key === "pu")) {
+        columns = found;
+        continue;
+      }
+    }
+    if (!columns) continue;
+    if (/\btotal ht brut\b|\btotal ttc\b|\bconditions generales\b|\bmodalites de paiement\b/.test(text)) {
+      columns = null;
+      continue;
+    }
+
+    const cells = Object.fromEntries(columns.map(({ key }) => [key, []]));
+    for (const part of row.parts) {
+      let columnIndex = columns.findIndex((column, i) => i < columns.length - 1 && part.x < (column.x + columns[i + 1].x) / 2);
+      if (columnIndex < 0) columnIndex = columns.length - 1;
+      cells[columns[columnIndex].key].push(part.text);
+    }
+    const cell = (key) => (cells[key] || []).join(" ").replace(/\s+/g, " ").trim();
+    const quantity = cell("qte").replace(",", ".");
+    const unit = cell("unite").toLowerCase();
+    const pu = money(cell("pu"));
+    const designation = cell("designation");
+    const isDataRow = /^\d+(?:\.\d+)?$/.test(quantity) && Boolean(unit) && Boolean(pu) && Boolean(designation);
+    if (!isDataRow) {
+      const previous = extracted[extracted.length - 1];
+      if (previous && designation && !/\b(d[eé]vis|client|total|acompte)\b/i.test(designation)) {
+        previous.description = [previous.description, designation].filter(Boolean).join(" ");
+      }
+      continue;
+    }
+    const tvaText = cell("tva").replace("%", "").replace(",", ".");
+    const taux = ["0", "5.5", "10", "20"].includes(tvaText) ? tvaText : "20";
+    const line = {
+      ...blankLine(Number(taux)),
+      designation,
+      qte: quantity,
+      unite: ["u", "h", "forfait", "m", "ml", "kg", "lot"].includes(unit) ? unit : "u",
+      pu,
+      remise: cell("remise").includes("%") ? cell("remise").replace(/[^\d,.]/g, "").replace(",", ".") : "0",
+      tva: Number(taux)
+    };
+    extracted.push(line);
+  }
+  return extracted;
 }
 
 function extractClient(lines) {
@@ -110,13 +197,15 @@ export async function extractArchivePdf(file) {
   const pdf = await loadPdf(new Uint8Array(await file.arrayBuffer()));
   const allLines = [];
   const leftLines = [];
-  const pages = [...new Set([1, 2, pdf.numPages].filter((pageNum) => pageNum <= pdf.numPages))];
+  const tableItems = [];
+  const pages = Array.from({ length: pdf.numPages }, (_, index) => index + 1);
   for (const pageNum of pages) {
     const page = await pdf.getPage(pageNum);
     const content = await page.getTextContent();
     const width = page.getViewport({ scale: 1 }).width;
     allLines.push(...linesFrom(content.items, width));
-    leftLines.push(...linesFrom(content.items, width * 0.62));
+    leftLines.push(...linesFrom(content.items, width * 0.55));
+    tableItems.push(...content.items);
   }
   const allText = allLines.join("\n");
   const totals = extractTotals(allLines);
@@ -134,15 +223,27 @@ export async function extractArchivePdf(file) {
       : /\binstallation\b/i.test(categoryText)
         ? "installation"
         : "";
+  const lignes = extractTableRows(tableItems);
+  const amountFromLines = lignes.reduce((total, line) => total + lineHT(line), 0);
   const montantHT = totals.ht || (totals.ttc
     ? (Number(totals.ttc) / (1 + Number(inferredTva) / 100)).toFixed(2)
-    : "");
+    : amountFromLines ? amountFromLines.toFixed(2) : "");
+  const acompteText = allLines.find((line) => /\bacompte\b.*\d+(?:[,.]\d+)?\s*%/i.test(line)) || "";
+  const acompte = /\bacompte\b.*?(\d+(?:[,.]\d+)?)\s*%/i.exec(acompteText)?.[1]?.replace(",", ".") || "";
+  const acompteIndex = allLines.indexOf(acompteText);
+  const conditionsIndex = allLines.findIndex((line, index) => index > acompteIndex && /\bconditions generales\b|\bmodalites de paiement\b/.test(normalizeText(line)));
+  const notes = acompteIndex >= 0 && conditionsIndex > acompteIndex
+    ? allLines.slice(acompteIndex + 1, conditionsIndex).filter((line) => !/\b(?:total|net a payer)\b/i.test(line)).join("\n").trim()
+    : "";
   return {
     numero: findNumber(allText),
     date: isoDate(dateLine) || isoDate(allText),
     objet: object,
     montantHT,
     tva: inferredTva,
+    acompte,
+    notes,
+    lignes,
     categorie,
     ...client,
     texteTrouve: allLines.length > 0

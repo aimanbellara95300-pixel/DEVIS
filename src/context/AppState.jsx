@@ -543,6 +543,7 @@ export function AppProvider({ children }) {
     d.numero = values.numero.trim();
     d.date = values.date;
     d.objet = values.objet.trim();
+    d.notes = values.notes.trim();
     d.statut = values.statut;
     d.client = {
       societe: values.societe.trim(),
@@ -556,12 +557,15 @@ export function AppProvider({ children }) {
       lieu: ""
     };
     d.tvaDef = taux;
-    d.lignes = [{
-      ...blankLine(taux),
-      designation: d.objet || "Devis archivé",
-      pu: num(values.montantHT),
-      tva: taux
-    }];
+    d.acompte = num(values.acompte) || d.acompte;
+    d.lignes = Array.isArray(values.lignes) && values.lignes.length
+      ? values.lignes.map((line) => ({ ...blankLine(num(line.tva) || taux), ...line }))
+      : [{
+          ...blankLine(taux),
+          designation: d.objet || "Devis archivé",
+          pu: num(values.montantHT),
+          tva: taux
+        }];
     d.archive = { pdfName: file.name, pdfSize: file.size, importeLe: Date.now() };
 
     try {

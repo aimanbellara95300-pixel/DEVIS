@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { CATS, STATUTS } from "../lib/constants.js";
-import { nextNumber } from "../lib/calc.js";
+import { blankLine, nextNumber } from "../lib/calc.js";
 import { today } from "../lib/format.js";
 import { extractArchivePdf } from "../lib/archivePdf.js";
 import { useApp } from "../context/AppState.jsx";
@@ -22,8 +22,11 @@ export default function ArchiveImport({ onClose }) {
     tel: "",
     email: "",
     objet: "",
+    notes: "",
     montantHT: "",
-    tva: "20"
+    tva: "20",
+    acompte: "",
+    lignes: []
   });
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -31,6 +34,10 @@ export default function ArchiveImport({ onClose }) {
   const [readMessage, setReadMessage] = useState("");
   const readId = useRef(0);
   const set = (key, value) => setValues((current) => ({ ...current, [key]: value }));
+  const setLine = (index, key, value) => setValues((current) => ({
+    ...current,
+    lignes: current.lignes.map((line, i) => i === index ? { ...line, [key]: value } : line)
+  }));
   const selectPdf = async (selected) => {
     const id = ++readId.current;
     setFile(selected);
@@ -42,16 +49,18 @@ export default function ArchiveImport({ onClose }) {
       if (id !== readId.current) return;
       setValues((current) => {
         const next = { ...current };
-        for (const key of ["numero", "date", "objet", "montantHT", "nom", "societe", "siret", "adresse", "cp", "ville", "tel", "email"]) {
+        for (const key of ["numero", "date", "objet", "notes", "montantHT", "nom", "societe", "siret", "adresse", "cp", "ville", "tel", "email"]) {
           if (extracted[key]) next[key] = extracted[key];
         }
         if (extracted.tva) next.tva = extracted.tva;
         if (extracted.type) next.type = extracted.type;
         if (extracted.categorie) next.categorie = extracted.categorie;
+        if (extracted.acompte) next.acompte = extracted.acompte;
+        if (extracted.lignes?.length) next.lignes = extracted.lignes;
         return next;
       });
       setReadMessage(extracted.texteTrouve
-        ? "Informations détectées automatiquement. Vérifie-les avant l’enregistrement ; le statut reste à confirmer."
+        ? `${extracted.lignes?.length || 0} ligne(s) extraite(s). Vérifie les informations détectées avant l’enregistrement ; le statut reste à confirmer.`
         : "Aucun texte détecté dans ce PDF. Il est probablement scanné : complète les champs manuellement.");
     } catch (e) {
       console.error(e);
@@ -132,6 +141,9 @@ export default function ArchiveImport({ onClose }) {
           <label className="full">Objet du devis
             <input value={values.objet} onChange={(e) => set("objet", e.target.value)} />
           </label>
+          <label className="full">Notes du devis
+            <textarea value={values.notes} onChange={(e) => set("notes", e.target.value)} />
+          </label>
           <label>Montant total HT
             <input required inputMode="decimal" placeholder="0,00" value={values.montantHT} onChange={(e) => set("montantHT", e.target.value)} />
           </label>
@@ -143,7 +155,42 @@ export default function ArchiveImport({ onClose }) {
               <option value="0">0 %</option>
             </select>
           </label>
+          <label>Acompte prévu (%)
+            <input inputMode="decimal" value={values.acompte} onChange={(e) => set("acompte", e.target.value)} />
+          </label>
         </div>
+        {values.lignes.length > 0 && (
+          <div className="card" style={{ margin: "14px 0 0", padding: 12 }}>
+            <h3 style={{ marginTop: 0 }}>Lignes extraites du devis</h3>
+            <div className="list">
+              {values.lignes.map((line, index) => (
+                <div key={line.id || index} className="line">
+                  <label>Désignation
+                    <input value={line.designation} onChange={(e) => setLine(index, "designation", e.target.value)} />
+                  </label>
+                  {line.description && <label>Description
+                    <input value={line.description} onChange={(e) => setLine(index, "description", e.target.value)} />
+                  </label>}
+                  <div className="grid" style={{ marginTop: 8 }}>
+                    <label>Quantité<input inputMode="decimal" value={line.qte} onChange={(e) => setLine(index, "qte", e.target.value)} /></label>
+                    <label>Unité<input value={line.unite} onChange={(e) => setLine(index, "unite", e.target.value)} /></label>
+                    <label>Prix unitaire HT<input inputMode="decimal" value={line.pu} onChange={(e) => setLine(index, "pu", e.target.value)} /></label>
+                    <label>Remise (%)<input inputMode="decimal" value={line.remise} onChange={(e) => setLine(index, "remise", e.target.value)} /></label>
+                    <label>TVA (%)<input inputMode="decimal" value={line.tva} onChange={(e) => setLine(index, "tva", e.target.value)} /></label>
+                  </div>
+                  <button className="btn ghost danger" type="button" onClick={() => setValues((current) => ({
+                    ...current,
+                    lignes: current.lignes.filter((_, i) => i !== index)
+                  }))}>Retirer la ligne</button>
+                </div>
+              ))}
+            </div>
+            <button className="btn" type="button" onClick={() => setValues((current) => ({
+              ...current,
+              lignes: [...current.lignes, blankLine(Number(current.tva) || 20)]
+            }))}>Ajouter une ligne</button>
+          </div>
+        )}
         {reading && <p className="muted" role="status">Lecture des informations du PDF…</p>}
         {!reading && readMessage && <p className="muted" role="status">{readMessage}</p>}
         <p className="muted">PDF limité à 20 Mo. Le document est conservé dans l’espace privé de l’application.</p>

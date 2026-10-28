@@ -47,6 +47,6 @@ Déploiement sans Git : `npm run build`, puis glisser le dossier `dist` dans Net
 ## À savoir
 
 - Devis, clients, fiches PDF et réglages sont dans Supabase. Au premier login, ce qui était encore enregistré dans ce navigateur est copié si le compte est vide.
-- Dans Suivi, « Ajouter un ancien devis » extrait les informations textuelles reconnues du PDF pour préremplir son formulaire (20 Mo maximum). Vérifie les champs avant l'enregistrement ; les PDF scannés sans texte doivent être complétés manuellement. Le client est créé ou réutilisé à l'enregistrement, et le PDF original reste téléchargeable depuis le suivi ou la fiche client.
+- Dans Suivi, « Ajouter un ancien devis » extrait les informations textuelles reconnues du PDF pour préremplir son formulaire, y compris les lignes et leurs montants pour les devis générés par l'application (20 Mo maximum). Vérifie les champs avant l'enregistrement ; les PDF scannés sans texte doivent être complétés manuellement. Le client est créé ou réutilisé à l'enregistrement, et le PDF original reste téléchargeable depuis le suivi ou la fiche client.
 - La lecture automatique des photos d'offres fournisseur n'est pas incluse. Les lignes et les montants se saisissent à la main. La photo d'une facture de dépense est enregistrée avec le devis.
 - En cas de connexion perdue, les devis sont sauvegardés localement (IndexedDB) et synchronisés dès la reconnexion.
