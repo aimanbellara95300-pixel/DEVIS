@@ -91,7 +91,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .tvapick{margin-bottom:12px}
 .tvapick .chips{margin-top:6px}
 .tvapick .chips button{font-size:15px;padding:8px 16px}
-.suivihead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+.suivihead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .stat{border-radius:8px;padding:10px;border:1px solid var(--line);font-variant-numeric:tabular-nums}
 .stat .n{font-size:26px;font-weight:800;line-height:1.1}

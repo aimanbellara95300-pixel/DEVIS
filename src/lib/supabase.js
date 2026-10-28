@@ -146,6 +146,47 @@ export async function dbSaveDevis(devis) {
   }
 }
 
+export async function dbSaveArchiveDevis(devis, file) {
+  const uid = await userId();
+  const path = `${uid}/devis/${devis.id}.pdf`;
+  const storage = supabase.storage.from("viviworks");
+  const uploaded = await storage.upload(path, file, { contentType: "application/pdf", upsert: true });
+  check(uploaded.error, "Envoi du PDF du devis");
+
+  const copy = plain({ ...devis, archive: { ...devis.archive, pdfPath: path } });
+  try {
+    const { error } = await supabase.from("devis").upsert({
+      id: copy.id,
+      user_id: uid,
+      data: copy,
+      updated_at: new Date().toISOString()
+    }, { onConflict: "id" });
+    check(error, "Enregistrement du devis archivé");
+    try {
+      await saveLocal("devis:", copy);
+    } catch (e) {
+      console.error("Le devis archivé est enregistré dans Supabase, mais pas dans le cache local :", e);
+    }
+    return copy;
+  } catch (e) {
+    const removed = await storage.remove([path]);
+    if (removed.error) console.error("Impossible de supprimer le PDF après l'échec de l'enregistrement :", removed.error);
+    throw e;
+  }
+}
+
+export async function dbGetArchivePdf(path) {
+  const { data, error } = await supabase.storage.from("viviworks").download(path);
+  check(error, "Téléchargement du PDF archivé");
+  return data;
+}
+
+export async function dbDelArchivePdf(path) {
+  if (!path) return;
+  const { error } = await supabase.storage.from("viviworks").remove([path]);
+  check(error, "Suppression du PDF archivé");
+}
+
 export async function dbDelDevis(id) {
   try {
     await idbDel("devis:" + id);

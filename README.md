@@ -47,5 +47,6 @@ Déploiement sans Git : `npm run build`, puis glisser le dossier `dist` dans Net
 ## À savoir
 
 - Devis, clients, fiches PDF et réglages sont dans Supabase. Au premier login, ce qui était encore enregistré dans ce navigateur est copié si le compte est vide.
+- Dans Suivi, « Ajouter un ancien devis » permet d'archiver un PDF (20 Mo maximum) avec ses informations principales. Le montant HT et un taux de TVA sont saisis manuellement pour l'inclure dans les totaux ; le PDF original peut ensuite être téléchargé depuis le suivi ou la fiche client.
 - La lecture automatique des photos d'offres fournisseur n'est pas incluse. Les lignes et les montants se saisissent à la main. La photo d'une facture de dépense est enregistrée avec le devis.
 - En cas de connexion perdue, les devis sont sauvegardés localement (IndexedDB) et synchronisés dès la reconnexion.

@@ -73,7 +73,9 @@ export default function Clients() {
                     {ds.length ? [...ds].sort((a, b) => (b.date || "").localeCompare(a.date || "")).map((d) => (
                       <div className="meta" key={d.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "4px 0" }}>
                         <span>{d.numero} · {CATS[d.categorie]} · {frDate(d.date)} <span className={"st " + d.statut}>{STATUTS[d.statut]}</span></span>
-                        <button className="btn ghost" onClick={() => app.openDevis(d.id)}>Ouvrir</button>
+                        {d.archive
+                          ? <button className="btn ghost" onClick={() => app.downloadArchivePdf(d)}>PDF original</button>
+                          : <button className="btn ghost" onClick={() => app.openDevis(d.id)}>Ouvrir</button>}
                       </div>
                     )) : <p className="empty">Aucun devis lié.</p>}
                     <div className="actions" style={{ marginTop: 8 }}>

@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { CATS, STATUTS } from "../lib/constants.js";
 import { clientNom, compute, norm, realMargin } from "../lib/calc.js";
 import { eur, frDate } from "../lib/format.js";
 import { useApp } from "../context/AppState.jsx";
+import ArchiveImport from "./ArchiveImport.jsx";
 
 export default function Suivi() {
   const app = useApp();
+  const [importing, setImporting] = useState(false);
   const inCat = app.devisList.filter((d) => !app.suiviCat || d.categorie === app.suiviCat);
   const grp = (k) => inCat.filter((d) => d.statut === k);
   const sumHT = (arr) => arr.reduce((a, d) => a + compute(d).ht, 0);
@@ -24,6 +27,9 @@ export default function Suivi() {
           <button className="btn primary" type="button" onClick={() => app.newDevis(app.suiviCat || "installation")}>
             {app.suiviCat ? `Nouveau devis ${CATS[app.suiviCat].toLowerCase()}` : "Nouveau devis"}
           </button>
+          <button className="btn" type="button" onClick={() => setImporting((open) => !open)}>
+            Ajouter un ancien devis
+          </button>
         </div>
         <div className="stats">
           <div className="stat enc"><div className="n">{grp("en_cours").length}</div><div className="l">En cours</div><div className="a">{eur(sumHT(grp("en_cours")))} HT</div></div>
@@ -37,6 +43,7 @@ export default function Suivi() {
           </div>
         </div>
       </div>
+      {importing && <ArchiveImport onClose={() => setImporting(false)} />}
       <div className="card">
         <div className="filters" role="group">
           {[["", "Tous"], ["en_cours", "En cours"], ["accepte", "Acceptés"], ["refuse", "Refusés"]].map(([k, label]) => (
@@ -52,6 +59,7 @@ export default function Suivi() {
               <div className="item" key={d.id}>
                 <div style={{ minWidth: 0 }}>
                   <strong>{d.numero}</strong>
+                  {d.archive && <span className="tag">PDF archivé</span>}
                   <span className={"st " + d.statut}>{STATUTS[d.statut]}</span>
                   <span className={"tag" + (d.type === "particulier" ? " part" : "")}>{d.type === "particulier" ? "Particulier" : "Pro"}</span>
                   <div className="meta">{clientNom(d)} · {CATS[d.categorie]} · {frDate(d.date)}</div>
@@ -63,7 +71,8 @@ export default function Suivi() {
                   </label>
                 </div>
                 <div className="actions" style={{ flexDirection: "column", alignItems: "flex-end" }}>
-                  <button className="btn ghost" onClick={() => app.openDevis(d.id)}>Ouvrir</button>
+                  {d.archive && <button className="btn ghost" onClick={() => app.downloadArchivePdf(d)}>Télécharger le PDF original</button>}
+                  {!d.archive && <button className="btn ghost" onClick={() => app.openDevis(d.id)}>Ouvrir</button>}
                   <button className="btn ghost" onClick={() => app.duplicate(d.id)}>Dupliquer</button>
                   <button className="btn ghost danger" onClick={() => app.erase(d.id)}>Effacer</button>
                 </div>

@@ -16,15 +16,18 @@ import {
 import { eur, hhmm, num, today, uid } from "../lib/format.js";
 import {
   dbAddFiche,
+  dbDelArchivePdf,
   dbDelClient,
   dbDelDevis,
   dbDelFiche,
+  dbGetArchivePdf,
   dbFicheBytes,
   dbGetSettings,
   dbListClients,
   dbListDevis,
   dbListFiches,
   dbSaveClient,
+  dbSaveArchiveDevis,
   dbSaveDevis,
   dbSaveSettings,
   importLocalIfEmpty,
@@ -230,7 +233,7 @@ export function AppProvider({ children }) {
       const metas = await dbListFiches();
       let list = (await dbListDevis()).map((d) => norm(structuredClone(d)));
       let cls = await dbListClients();
-      for (const d of list.filter((x) => x.statut === "accepte" && !x.facture).sort((a, b) => (a.date || "").localeCompare(b.date || ""))) {
+      for (const d of list.filter((x) => x.statut === "accepte" && !x.facture && !x.archive).sort((a, b) => (a.date || "").localeCompare(b.date || ""))) {
         ensureFacture(d, list);
         await dbSaveDevis(d);
       }
@@ -253,7 +256,7 @@ export function AppProvider({ children }) {
       listRef.current = list;
       clientsRef.current = cls;
       fichesRef.current = metas;
-      const last = list.slice().sort((a, b) => (b.maj || 0) - (a.maj || 0))[0];
+      const last = list.filter((d) => !d.archive).sort((a, b) => (b.maj || 0) - (a.maj || 0))[0];
       const start = last ? norm(structuredClone(last)) : freshDevis(list, s, "installation");
       curRef.current = start;
       setSettings(s);
@@ -350,6 +353,7 @@ export function AppProvider({ children }) {
     copy.date = today();
     copy.statut = "en_cours";
     copy.depenses = [];
+    delete copy.archive;
     delete copy.facture;
     delete copy.envoyeLe;
     curRef.current = copy;
@@ -380,6 +384,15 @@ export function AppProvider({ children }) {
       : `Effacer définitivement le devis ${d.numero} de la base ? Cette action est irréversible.`;
     if (!confirm(confirmation)) return false;
     await dbDelDevis(d.id);
+    let archivePdfError = false;
+    if (d.archive?.pdfPath) {
+      try {
+        await dbDelArchivePdf(d.archive.pdfPath);
+      } catch (e) {
+        console.error(e);
+        archivePdfError = true;
+      }
+    }
     const list = listRef.current.filter((x) => x.id !== d.id);
     listRef.current = list;
     setDevisList(list);
@@ -390,9 +403,9 @@ export function AppProvider({ children }) {
       setCur(n);
       setSave({ kind: "", text: "Pas encore enregistré" });
     }
-    toast(d.facture
+    toast((d.facture
       ? `Devis ${d.numero} et facture ${d.facture.numero} effacés.`
-      : `Devis ${d.numero} effacé.`);
+      : `Devis ${d.numero} effacé.`) + (archivePdfError ? " Le PDF original n'a pas pu être supprimé." : ""));
     return true;
   }, [toast]);
 
@@ -464,7 +477,7 @@ export function AppProvider({ children }) {
   const setStatut = useCallback(async (id, statut, fromForm) => {
     const apply = (d) => {
       d.statut = statut;
-      const created = ensureFacture(d, listRef.current);
+      const created = d.archive ? false : ensureFacture(d, listRef.current);
       return created;
     };
     if (fromForm || id === curRef.current?.id) {
@@ -491,6 +504,100 @@ export function AppProvider({ children }) {
     }
     toast(created ? `Devis accepté : facture ${d.facture.numero} créée.` : `Devis ${d.numero} : ${statut === "accepte" ? "accepté" : statut === "refuse" ? "refusé" : "en cours"}.`);
   }, [persistCur, toast]);
+
+  const importArchive = useCallback(async (values, file) => {
+    if (!file || !/\.pdf$/i.test(file.name) || (file.type && file.type !== "application/pdf")) {
+      toast("Choisis un fichier PDF valide.");
+      return false;
+    }
+    if (!values.numero.trim() || !values.date ||
+      (values.type === "particulier" && !values.nom.trim()) ||
+      (values.type === "professionnel" && !values.societe.trim()) ||
+      !(num(values.montantHT) > 0) || ![20, 10, 5.5, 0].includes(num(values.tva)) ||
+      !Object.hasOwn(CATS, values.categorie) ||
+      !["en_cours", "accepte", "refuse"].includes(values.statut)) {
+      toast("Vérifie les informations obligatoires du devis.");
+      return false;
+    }
+    if (file.size > 20 * 1048576) {
+      toast("Le PDF dépasse 20 Mo.");
+      return false;
+    }
+    if (listRef.current.some((d) => String(d.numero).trim().toLowerCase() === values.numero.trim().toLowerCase())) {
+      toast(`Le numéro ${values.numero} existe déjà.`);
+      return false;
+    }
+    if (dirtyRef.current && hasContent(curRef.current)) {
+      try {
+        await persistCur();
+      } catch (e) {
+        console.error(e);
+        toast(e.message || "Enregistre le devis en cours avant d'importer un ancien devis.");
+        return false;
+      }
+    }
+
+    const taux = num(values.tva);
+    const d = freshDevis(listRef.current, settingsRef.current, values.categorie);
+    d.type = values.type;
+    d.numero = values.numero.trim();
+    d.date = values.date;
+    d.objet = values.objet.trim();
+    d.statut = values.statut;
+    d.client = {
+      societe: values.societe.trim(),
+      nom: values.nom.trim(),
+      adresse: values.adresse.trim(),
+      cp: values.cp.trim(),
+      ville: values.ville.trim(),
+      tel: values.tel.trim(),
+      email: values.email.trim(),
+      siret: values.siret.trim(),
+      lieu: ""
+    };
+    d.tvaDef = taux;
+    d.lignes = [{
+      ...blankLine(taux),
+      designation: d.objet || "Devis archivé",
+      pu: num(values.montantHT),
+      tva: taux
+    }];
+    d.archive = { pdfName: file.name, pdfSize: file.size, importeLe: Date.now() };
+
+    try {
+      const withClient = await syncClient(d);
+      withClient.maj = Date.now();
+      const saved = await dbSaveArchiveDevis(withClient, file);
+      const list = listRef.current.concat(saved);
+      listRef.current = list;
+      setDevisList(list);
+      toast(`Devis ${saved.numero} archivé et enregistré.`);
+      return true;
+    } catch (e) {
+      console.error(e);
+      toast(e.message || "L'import du devis a échoué.");
+      return false;
+    }
+  }, [persistCur, syncClient, toast]);
+
+  const downloadArchivePdf = useCallback(async (d) => {
+    if (!d?.archive?.pdfPath) return toast("Aucun PDF original n'est associé à ce devis.");
+    try {
+      const blob = await dbGetArchivePdf(d.archive.pdfPath);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = d.archive.pdfName || `Devis_${d.numero}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      toast("PDF original téléchargé.");
+    } catch (e) {
+      console.error(e);
+      toast(e.message || "Le téléchargement du PDF a échoué.");
+    }
+  }, [toast]);
 
   const ficheBytes = useCallback(async (f) => dbFicheBytes(f), []);
 
@@ -775,6 +882,7 @@ export function AppProvider({ children }) {
     ready, authReady, configured: isSupabaseConfigured(), session, settings, devisList, clients, fiches, cur, tab, suiviCat, suiviSt, factF, cliFilter, cliSearch, cliOpen,
     save, toastMsg, photoStatus, scanStatus, busy, viewer, signIn, signUp, signOut,
     showTab, newDevis, newDevisForClient, openDevis, duplicate, erase, saveNow, touch, setType, setTvaAll, pickClient, setStatut,
+    importArchive, downloadArchivePdf,
     setSuiviSt, setFactF, setCliFilter, setCliSearch, setCliOpen, addFiches, delFiche, saveSettings, pickColor,
     onOfferFile, onScanFile, preview, download, exportCurrent, closeViewer: () => setViewer(null),
     defaultMail, sendDossier, saveClientNotes, deleteClient, setPayee, applyAllMarge, applyMarge
@@ -782,6 +890,7 @@ export function AppProvider({ children }) {
     ready, authReady, session, settings, devisList, clients, fiches, cur, tab, suiviCat, suiviSt, factF, cliFilter, cliSearch, cliOpen,
     save, toastMsg, photoStatus, scanStatus, busy, viewer, signIn, signUp, signOut,
     showTab, newDevis, newDevisForClient, openDevis, duplicate, erase, saveNow, touch, setType, setTvaAll, pickClient, setStatut,
+    importArchive, downloadArchivePdf,
     addFiches, delFiche, saveSettings, pickColor, onOfferFile, onScanFile, preview, download, exportCurrent,
     defaultMail, sendDossier, saveClientNotes, deleteClient, setPayee, applyAllMarge
   ]);

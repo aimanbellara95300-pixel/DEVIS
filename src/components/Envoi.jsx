@@ -19,7 +19,7 @@ export default function Envoi() {
   }, [d?.id]);
 
   if (!d) return null;
-  const others = app.devisList.filter((x) => x.id !== d.id).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const others = app.devisList.filter((x) => x.id !== d.id && !x.archive).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
   const brands = [...new Set(app.fiches.map((f) => f.marque))].sort((a, b) => a.localeCompare(b, "fr"));
   const avail = app.fiches.filter((f) => !d.fiches.includes(f.id));
 
@@ -30,6 +30,18 @@ export default function Envoi() {
     if (dir === "del") a.splice(i, 1);
     return x;
   });
+
+  if (d.archive) {
+    return (
+      <section className="tab on">
+        <div className="card">
+          <h2>Devis archivé</h2>
+          <p className="muted">Ce devis historique est conservé avec son PDF original. Il n'est pas possible de générer un nouveau PDF ou de l'envoyer depuis cette page.</p>
+          <button className="btn primary" type="button" onClick={() => app.downloadArchivePdf(d)}>Télécharger le PDF original</button>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="tab on">
