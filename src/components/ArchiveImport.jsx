@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { CATS, STATUTS } from "../lib/constants.js";
 import { nextNumber } from "../lib/calc.js";
 import { today } from "../lib/format.js";
+import { extractArchivePdf } from "../lib/archivePdf.js";
 import { useApp } from "../context/AppState.jsx";
 
 export default function ArchiveImport({ onClose }) {
@@ -26,13 +27,45 @@ export default function ArchiveImport({ onClose }) {
   });
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [reading, setReading] = useState(false);
+  const [readMessage, setReadMessage] = useState("");
+  const readId = useRef(0);
   const set = (key, value) => setValues((current) => ({ ...current, [key]: value }));
+  const selectPdf = async (selected) => {
+    const id = ++readId.current;
+    setFile(selected);
+    setReadMessage("");
+    if (!selected) return;
+    setReading(true);
+    try {
+      const extracted = await extractArchivePdf(selected);
+      if (id !== readId.current) return;
+      setValues((current) => {
+        const next = { ...current };
+        for (const key of ["numero", "date", "objet", "montantHT", "nom", "societe", "siret", "adresse", "cp", "ville", "tel", "email"]) {
+          if (extracted[key]) next[key] = extracted[key];
+        }
+        if (extracted.tva) next.tva = extracted.tva;
+        if (extracted.type) next.type = extracted.type;
+        if (extracted.categorie) next.categorie = extracted.categorie;
+        return next;
+      });
+      setReadMessage(extracted.texteTrouve
+        ? "Informations détectées automatiquement. Vérifie-les avant l’enregistrement ; le statut reste à confirmer."
+        : "Aucun texte détecté dans ce PDF. Il est probablement scanné : complète les champs manuellement.");
+    } catch (e) {
+      console.error(e);
+      if (id === readId.current) setReadMessage("Lecture impossible pour ce PDF. Tu peux renseigner les champs manuellement.");
+    } finally {
+      if (id === readId.current) setReading(false);
+    }
+  };
 
   return (
     <div className="card">
       <h2>Enregistrer un ancien devis</h2>
       <p className="muted" style={{ marginTop: -6 }}>
-        Ajoute le PDF original, puis saisis les informations à conserver dans le suivi. Le montant HT et son taux de TVA servent aux totaux.
+        Sélectionne le PDF : les informations reconnues seront préremplies. Vérifie-les, complète ce qui manque, puis enregistre le devis et le client.
       </p>
       <form onSubmit={async (e) => {
         e.preventDefault();
@@ -44,7 +77,7 @@ export default function ArchiveImport({ onClose }) {
       }}>
         <div className="grid">
           <label>PDF original
-            <input type="file" accept="application/pdf,.pdf" required onChange={(e) => setFile(e.target.files?.[0] || null)} />
+            <input type="file" accept="application/pdf,.pdf" required onChange={(e) => selectPdf(e.target.files?.[0] || null)} />
           </label>
           <label>Numéro du devis
             <input required value={values.numero} onChange={(e) => set("numero", e.target.value)} />
@@ -111,10 +144,12 @@ export default function ArchiveImport({ onClose }) {
             </select>
           </label>
         </div>
+        {reading && <p className="muted" role="status">Lecture des informations du PDF…</p>}
+        {!reading && readMessage && <p className="muted" role="status">{readMessage}</p>}
         <p className="muted">PDF limité à 20 Mo. Le document est conservé dans l’espace privé de l’application.</p>
         <div className="actions">
-          <button className="btn primary" type="submit" disabled={busy || !file}>{busy ? "Enregistrement…" : "Enregistrer le devis"}</button>
-          <button className="btn" type="button" disabled={busy} onClick={onClose}>Annuler</button>
+          <button className="btn primary" type="submit" disabled={busy || reading || !file}>{busy ? "Enregistrement…" : "Enregistrer le devis et le client"}</button>
+          <button className="btn" type="button" disabled={busy || reading} onClick={onClose}>Annuler</button>
         </div>
       </form>
     </div>
