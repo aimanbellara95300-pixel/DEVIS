@@ -566,7 +566,13 @@ export function AppProvider({ children }) {
           pu: num(values.montantHT),
           tva: taux
         }];
-    d.archive = { pdfName: file.name, pdfSize: file.size, importeLe: Date.now() };
+    const numeroOriginal = String(values.numeroOriginal || "").trim();
+    d.archive = {
+      pdfName: file.name,
+      pdfSize: file.size,
+      importeLe: Date.now(),
+      ...(numeroOriginal && numeroOriginal.toLowerCase() !== d.numero.toLowerCase() ? { numeroOriginal } : {})
+    };
 
     try {
       const withClient = await syncClient(d);

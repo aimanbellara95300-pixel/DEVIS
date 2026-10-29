@@ -54,8 +54,8 @@ function isoDate(value) {
 }
 
 function findNumber(text) {
-  const match = /\b(?:devis|quote)\s*(?:n[°ºo.]|num(?:é|e)ro)?\s*[:#-]?\s*([A-Z0-9][A-Z0-9/_-]{1,})/i.exec(text)
-    || /^\s*n[°ºo.]?\s*[:#-]?\s*([A-Z0-9][A-Z0-9/_-]{1,})\s*$/im.exec(text);
+  const match = /\b(?:devis|quote)\s*n\s*[°ºo.]\s*[:#-]?\s*([A-Z0-9][A-Z0-9/_-]{1,})/i.exec(text)
+    || /\bn\s*[°ºo.]\s*[:#-]?\s*(D[-_/]\d{4}[-_/]\d{3,})/i.exec(text);
   return match?.[1] || "";
 }
 
@@ -91,7 +91,7 @@ function extractTableRows(items) {
   }
   rows.sort((a, b) => b.y - a.y);
 
-  const extracted = [];
+  const tableRows = [];
   let columns = null;
   for (const row of rows) {
     const text = normalizeText(row.parts.map((part) => part.text).join(" "));
@@ -132,80 +132,133 @@ function extractTableRows(items) {
     const unit = cell("unite").toLowerCase();
     const pu = money(cell("pu"));
     const designation = cell("designation");
-    const isDataRow = /^\d+(?:\.\d+)?$/.test(quantity) && Boolean(unit) && Boolean(pu) && Boolean(designation);
+    const isDataRow = /^\d+(?:\.\d+)?$/.test(quantity) && Boolean(unit) && Boolean(pu);
     if (!isDataRow) {
-      const previous = extracted[extracted.length - 1];
-      if (previous && designation && !/\b(d[eé]vis|client|total|acompte)\b/i.test(designation)) {
-        previous.description = [previous.description, designation].filter(Boolean).join(" ");
+      if (designation && !/\b(d[eé]vis|client|total|acompte)\b/i.test(designation)) {
+        tableRows.push({ y: row.y, designation });
       }
       continue;
     }
     const tvaText = cell("tva").replace("%", "").replace(",", ".");
     const taux = ["0", "5.5", "10", "20"].includes(tvaText) ? tvaText : "20";
-    const line = {
-      ...blankLine(Number(taux)),
-      designation,
-      qte: quantity,
-      unite: ["u", "h", "forfait", "m", "ml", "kg", "lot"].includes(unit) ? unit : "u",
-      pu,
-      remise: cell("remise").includes("%") ? cell("remise").replace(/[^\d,.]/g, "").replace(",", ".") : "0",
-      tva: Number(taux)
-    };
-    extracted.push(line);
+    tableRows.push({
+      y: row.y,
+      line: {
+        ...blankLine(Number(taux)),
+        designation,
+        qte: quantity,
+        unite: ["u", "h", "forfait", "m", "ml", "kg", "lot"].includes(unit) ? unit : "u",
+        pu,
+        remise: cell("remise").includes("%") ? cell("remise").replace(/[^\d,.]/g, "").replace(",", ".") : "0",
+        tva: Number(taux)
+      }
+    });
   }
-  return extracted;
+
+  const dataRows = tableRows.filter((row) => row.line);
+  for (const row of tableRows) {
+    if (row.line || !dataRows.length) continue;
+    const nearest = dataRows.reduce((best, candidate) =>
+      Math.abs(candidate.y - row.y) < Math.abs(best.y - row.y) ? candidate : best
+    );
+    nearest.designationParts ||= [];
+    nearest.designationParts.push({ y: row.y, text: row.designation });
+  }
+  return dataRows.map(({ line, y, designationParts = [] }) => {
+    const parts = [
+      ...(line.designation ? [{ y, text: line.designation }] : []),
+      ...designationParts
+    ].sort((a, b) => b.y - a.y).map((part) => part.text);
+    line.designation = parts[0] || "Ligne de devis";
+    line.description = parts.slice(1).join(" ");
+    return line;
+  });
 }
 
 function extractClient(lines) {
   const heading = lines.findIndex((line) => /\bclient\s+(particulier|professionnel|pro)\b/i.test(line));
-  const isPro = heading >= 0 && /\b(?:professionnel|pro)\b/i.test(lines[heading]);
-  const block = heading >= 0 ? lines.slice(heading + 1, heading + 10) : [];
-  const email = lines.join(" ").match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || "";
-  const tel = lines.join(" ").match(/(?:\+?\d[\d\s()./-]{7,}\d)/)?.[0]?.trim() || "";
-  const siret = lines.join(" ").match(/\b\d{3}\s?\d{3}\s?\d{3}\s?\d{5}\b/)?.[0] || "";
-  const address = labeled(lines, "adresse|address");
-  const postalCity = lines.find((line) => /\b\d{5}\s+\D/.test(line)) || "";
-  const postalMatch = /\b(\d{5})\s+(.+)$/.exec(postalCity);
-  let societe = labeled(lines, "soci[ée]t[ée]|entreprise|raison sociale|company");
-  let nom = labeled(lines, "nom du client|contact|nom");
-  let adresseClient = "";
-  if (heading >= 0 && block.length) {
-    const clean = block.filter((line) => !/@/.test(line) && !/\b(?:t[ée]l|siret|TVA)\b/i.test(line));
-    if (isPro) {
-      societe ||= clean[0] || "";
-      nom ||= clean[1] || "";
-      adresseClient = clean[2] || "";
-    } else {
-      nom ||= clean[0] || "";
-      adresseClient = clean[1] || "";
-    }
+  if (heading < 0) {
+    return { type: "particulier", societe: "", nom: "", adresse: "", cp: "", ville: "", tel: "", email: "", siret: "" };
   }
+  const isPro = heading >= 0 && /\b(?:professionnel|pro)\b/i.test(lines[heading]);
+  const block = [];
+  for (const line of lines.slice(heading + 1)) {
+    if (/^(?:objet|lieu d'intervention|d[ée]signation|qt[ée]|total ht)\b/i.test(line)) break;
+    if (block.length >= 8) break;
+    block.push(line);
+  }
+  const email = block.join(" ").match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || "";
+  const tel = block.join(" ").match(/(?:\+?\d[\d\s()./-]{7,}\d)/)?.[0]?.trim() || "";
+  const siret = block.join(" ").match(/\b\d{3}\s?\d{3}\s?\d{3}\s?\d{5}\b/)?.[0] || "";
+  const postalCity = block.find((line) => /\b\d{5}\s+\D/.test(line)) || "";
+  const postalMatch = /\b(\d{5})\s+(.+)$/.exec(postalCity);
+  const clean = block.filter((line) =>
+    !/@/.test(line) &&
+    !/\b(?:t[ée]l|siret|TVA)\b/i.test(line) &&
+    !/^\d{4,5}\s+\D/.test(line)
+  );
+  const secondLineIsAddress = isPro && /^(?:\d+\s+)?(?:rue|r\.|avenue|av\.?|boulevard|bd\.?|impasse|chemin|route|place|all[ée]e|quai|cours|passage|résidence|residence)\b/i.test(clean[1] || "");
+  const societe = isPro ? clean[0] || "" : "";
+  const nom = isPro ? (secondLineIsAddress ? "" : clean[1] || "") : clean[0] || "";
+  const adresseClient = clean.slice(isPro ? (secondLineIsAddress ? 1 : 2) : 1).join(" ");
+  const address = labeled(block, "adresse|address");
   return {
-    type: isPro || siret ? "professionnel" : "particulier",
+    type: isPro ? "professionnel" : "particulier",
     societe,
     nom,
     adresse: address || adresseClient,
-    cp: labeled(lines, "code postal|cp") || postalMatch?.[1] || "",
-    ville: labeled(lines, "ville|city") || postalMatch?.[2]?.trim() || "",
-    tel: labeled(lines, "t[ée]l[ée]phone|t[ée]l\\.?|phone") || tel,
-    email: labeled(lines, "e-?mail|courriel") || email,
-    siret: labeled(lines, "siret|n[°o] ?tva|tva intracommunautaire") || siret
+    cp: postalMatch?.[1] || "",
+    ville: postalMatch?.[2]?.trim() || "",
+    tel,
+    email,
+    siret
   };
+}
+
+function extractObject(items, lines) {
+  const rows = [];
+  for (const item of items) {
+    const text = item.str?.trim();
+    if (!text) continue;
+    const y = item.transform[5];
+    let row = rows.find((candidate) => Math.abs(candidate.y - y) < 3);
+    if (!row) {
+      row = { y, parts: [] };
+      rows.push(row);
+    }
+    row.parts.push({ x: item.transform[4], text });
+  }
+  rows.sort((a, b) => b.y - a.y);
+  for (let i = 0; i < rows.length; i++) {
+    const parts = rows[i].parts.sort((a, b) => a.x - b.x);
+    const labelIndex = parts.findIndex((part) => /^objet(?: du devis)?\s*[:#-]?$/i.test(part.text));
+    if (labelIndex < 0) continue;
+    const label = parts[labelIndex];
+    const inline = /^objet(?: du devis)?\s*[:#-]\s*(.+)$/i.exec(label.text)?.[1];
+    if (inline) return inline.trim();
+    const sameRow = parts.filter((part) => part.x > label.x + 4).map((part) => part.text);
+    if (sameRow.length) return sameRow.join(" ").trim();
+    const next = rows[i + 1]?.parts
+      .filter((part) => part.x >= label.x - 4)
+      .map((part) => part.text) || [];
+    if (next.length) return next.join(" ").trim();
+  }
+  return labeled(lines, "objet|objet du devis|nature des travaux|description des travaux");
 }
 
 export async function extractArchivePdf(file) {
   const pdf = await loadPdf(new Uint8Array(await file.arrayBuffer()));
   const allLines = [];
   const leftLines = [];
-  const tableItems = [];
+  const tablePages = [];
   const pages = Array.from({ length: pdf.numPages }, (_, index) => index + 1);
   for (const pageNum of pages) {
     const page = await pdf.getPage(pageNum);
     const content = await page.getTextContent();
     const width = page.getViewport({ scale: 1 }).width;
     allLines.push(...linesFrom(content.items, width));
-    leftLines.push(...linesFrom(content.items, width * 0.55));
-    tableItems.push(...content.items);
+    leftLines.push(...linesFrom(content.items, width * 0.5));
+    tablePages.push(content.items);
   }
   const allText = allLines.join("\n");
   const totals = extractTotals(allLines);
@@ -213,7 +266,7 @@ export async function extractArchivePdf(file) {
   const inferredTva = totals.tva || (totals.ht && totals.ttc
     ? ["20", "10", "5.5", "0"].find((rate) => Math.abs(Number(totals.ht) * (1 + Number(rate) / 100) - Number(totals.ttc)) < 0.03) || "20"
     : "20");
-  const object = labeled(allLines, "objet|objet du devis|nature des travaux|description des travaux");
+  const object = extractObject(tablePages[0] || [], allLines);
   const dateLine = allLines.find((line) => /\bdate\b/i.test(line)) || "";
   const categoryText = object || allLines.join(" ");
   const categorie = /\b(?:d[ée]pannage|r[ée]paration)\b/i.test(categoryText)
@@ -223,7 +276,7 @@ export async function extractArchivePdf(file) {
       : /\binstallation\b/i.test(categoryText)
         ? "installation"
         : "";
-  const lignes = extractTableRows(tableItems);
+  const lignes = tablePages.flatMap((items) => extractTableRows(items));
   const amountFromLines = lignes.reduce((total, line) => total + lineHT(line), 0);
   const montantHT = totals.ht || (totals.ttc
     ? (Number(totals.ttc) / (1 + Number(inferredTva) / 100)).toFixed(2)

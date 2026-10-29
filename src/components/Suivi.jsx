@@ -62,6 +62,7 @@ export default function Suivi() {
                   {d.archive && <span className="tag">PDF archivé</span>}
                   <span className={"st " + d.statut}>{STATUTS[d.statut]}</span>
                   <span className={"tag" + (d.type === "particulier" ? " part" : "")}>{d.type === "particulier" ? "Particulier" : "Pro"}</span>
+                  {d.archive?.numeroOriginal && <div className="meta">Numéro sur le PDF original : {d.archive.numeroOriginal}</div>}
                   <div className="meta">{clientNom(d)} · {CATS[d.categorie]} · {frDate(d.date)}</div>
                   <div className="meta">{eur(r.ht)} HT · {eur(compute(d).ttc)} TTC{d.depenses.length ? ` · marge réelle ${eur(r.marge)}` : ""}</div>
                   <label style={{ marginTop: 6, maxWidth: 170 }}>Statut

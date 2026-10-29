@@ -5,10 +5,10 @@ import { today } from "../lib/format.js";
 import { extractArchivePdf } from "../lib/archivePdf.js";
 import { useApp } from "../context/AppState.jsx";
 
-export default function ArchiveImport({ onClose }) {
-  const app = useApp();
-  const [values, setValues] = useState({
+function emptyValues(app) {
+  return {
     numero: nextNumber(app.devisList),
+    numeroOriginal: "",
     date: today(),
     categorie: app.suiviCat || "installation",
     statut: "en_cours",
@@ -27,7 +27,12 @@ export default function ArchiveImport({ onClose }) {
     tva: "20",
     acompte: "",
     lignes: []
-  });
+  };
+}
+
+export default function ArchiveImport({ onClose }) {
+  const app = useApp();
+  const [values, setValues] = useState(() => emptyValues(app));
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const [reading, setReading] = useState(false);
@@ -42,15 +47,29 @@ export default function ArchiveImport({ onClose }) {
     const id = ++readId.current;
     setFile(selected);
     setReadMessage("");
-    if (!selected) return;
+    if (!selected) {
+      setReading(false);
+      setValues(emptyValues(app));
+      return;
+    }
+    const defaults = emptyValues(app);
+    setValues(defaults);
     setReading(true);
     try {
       const extracted = await extractArchivePdf(selected);
       if (id !== readId.current) return;
-      setValues((current) => {
-        const next = { ...current };
-        for (const key of ["numero", "date", "objet", "notes", "montantHT", "nom", "societe", "siret", "adresse", "cp", "ville", "tel", "email"]) {
+      const numberAlreadyUsed = Boolean(extracted.numero) && app.devisList.some(
+        (devis) => String(devis.numero).trim().toLowerCase() === extracted.numero.trim().toLowerCase()
+      );
+      const suggestedNumber = numberAlreadyUsed ? nextNumber(app.devisList) : extracted.numero;
+      setValues(() => {
+        const next = { ...defaults };
+        for (const key of ["date", "objet", "notes", "montantHT", "nom", "societe", "siret", "adresse", "cp", "ville", "tel", "email"]) {
           if (extracted[key]) next[key] = extracted[key];
+        }
+        if (extracted.numero) {
+          next.numero = suggestedNumber;
+          next.numeroOriginal = extracted.numero;
         }
         if (extracted.tva) next.tva = extracted.tva;
         if (extracted.type) next.type = extracted.type;
@@ -60,8 +79,8 @@ export default function ArchiveImport({ onClose }) {
         return next;
       });
       setReadMessage(extracted.texteTrouve
-        ? `${extracted.lignes?.length || 0} ligne(s) extraite(s). Vérifie les informations détectées avant l’enregistrement ; le statut reste à confirmer.`
-        : "Aucun texte détecté dans ce PDF. Il est probablement scanné : complète les champs manuellement.");
+        ? `${extracted.lignes?.length || 0} ligne(s) extraite(s). Vérifie les informations détectées avant l’enregistrement. Le statut initial est « En cours ».${numberAlreadyUsed ? ` Le numéro ${extracted.numero} existe déjà : ${suggestedNumber} a été proposé. Le PDF original reste inchangé.` : ""}`
+        : "Aucun texte détecté dans ce PDF. Il est probablement scanné : complète les champs manuellement. Le statut initial est « En cours ».");
     } catch (e) {
       console.error(e);
       if (id === readId.current) setReadMessage("Lecture impossible pour ce PDF. Tu peux renseigner les champs manuellement.");
@@ -90,6 +109,9 @@ export default function ArchiveImport({ onClose }) {
           </label>
           <label>Numéro du devis
             <input required value={values.numero} onChange={(e) => set("numero", e.target.value)} />
+            {values.numeroOriginal && values.numeroOriginal !== values.numero && (
+              <span className="muted">Numéro indiqué sur le PDF original : {values.numeroOriginal}</span>
+            )}
           </label>
           <label>Date du devis
             <input type="date" required value={values.date} onChange={(e) => set("date", e.target.value)} />
