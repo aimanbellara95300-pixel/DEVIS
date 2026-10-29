@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { CATS, STATUTS } from "../lib/constants.js";
-import { blankLine, nextNumber } from "../lib/calc.js";
-import { today } from "../lib/format.js";
+import { blankLine, lineHT, nextNumber } from "../lib/calc.js";
+import { eur, today } from "../lib/format.js";
 import { extractArchivePdf } from "../lib/archivePdf.js";
 import { useApp } from "../context/AppState.jsx";
 
@@ -43,6 +43,9 @@ export default function ArchiveImport({ onClose }) {
     ...current,
     lignes: current.lignes.map((line, i) => i === index ? { ...line, [key]: value } : line)
   }));
+  const lignesHT = values.lignes.reduce((total, line) => total + lineHT(line), 0);
+  const totalMismatch = values.lignes.length > 0 &&
+    Math.abs(lignesHT - Number(String(values.montantHT).replace(",", "."))) > 0.02;
   const selectPdf = async (selected) => {
     const id = ++readId.current;
     setFile(selected);
@@ -190,9 +193,11 @@ export default function ArchiveImport({ onClose }) {
             <input inputMode="decimal" value={values.acompte} onChange={(e) => set("acompte", e.target.value)} />
           </label>
         </div>
-        {values.lignes.length > 0 && (
-          <div className="card" style={{ margin: "14px 0 0", padding: 12 }}>
-            <h3 style={{ marginTop: 0 }}>Lignes extraites du devis</h3>
+        <div className="card" style={{ margin: "14px 0 0", padding: 12 }}>
+            <h3 style={{ marginTop: 0 }}>Tableau du devis ({values.lignes.length} ligne(s))</h3>
+            {!values.lignes.length && (
+              <p className="muted" role="status">Aucune ligne détectée dans ce PDF. Ajoute les lignes manuellement en les vérifiant sur le document original.</p>
+            )}
             <div className="list">
               {values.lignes.map((line, index) => (
                 <div key={line.id || index} className="line">
@@ -216,12 +221,20 @@ export default function ArchiveImport({ onClose }) {
                 </div>
               ))}
             </div>
+            {values.lignes.length > 0 && (
+              <div className="margebox" style={{ marginTop: 12 }}>
+                <div><span>Total des lignes HT</span><b>{eur(lignesHT)}</b></div>
+                <div><span>Total HT du PDF</span><b>{eur(Number(String(values.montantHT).replace(",", ".")) || 0)}</b></div>
+                {totalMismatch && (
+                  <p className="muted" role="alert">Attention : les lignes ne correspondent pas au montant HT du PDF. Vérifie les quantités, prix et remises avant l’enregistrement.</p>
+                )}
+              </div>
+            )}
             <button className="btn" type="button" onClick={() => setValues((current) => ({
               ...current,
               lignes: [...current.lignes, blankLine(Number(current.tva) || 20)]
             }))}>Ajouter une ligne</button>
-          </div>
-        )}
+        </div>
         {reading && <p className="muted" role="status">Lecture des informations du PDF…</p>}
         {!reading && readMessage && <p className="muted" role="status">{readMessage}</p>}
         <p className="muted">PDF limité à 20 Mo. Le document est conservé dans l’espace privé de l’application.</p>
