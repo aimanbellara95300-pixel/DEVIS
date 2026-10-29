@@ -62,6 +62,15 @@ export default function ArchiveImport({ onClose }) {
         (devis) => String(devis.numero).trim().toLowerCase() === extracted.numero.trim().toLowerCase()
       );
       const suggestedNumber = numberAlreadyUsed ? nextNumber(app.devisList) : extracted.numero;
+      const lignes = extracted.lignes?.length
+        ? extracted.lignes
+        : extracted.montantHT
+          ? [{
+              ...blankLine(Number(extracted.tva) || 20),
+              designation: extracted.objet || "Montant total HT repris du PDF",
+              pu: extracted.montantHT
+            }]
+          : [];
       setValues(() => {
         const next = { ...defaults };
         for (const key of ["date", "objet", "notes", "montantHT", "nom", "societe", "siret", "adresse", "cp", "ville", "tel", "email"]) {
@@ -75,11 +84,11 @@ export default function ArchiveImport({ onClose }) {
         if (extracted.type) next.type = extracted.type;
         if (extracted.categorie) next.categorie = extracted.categorie;
         if (extracted.acompte) next.acompte = extracted.acompte;
-        if (extracted.lignes?.length) next.lignes = extracted.lignes;
+        if (lignes.length) next.lignes = lignes;
         return next;
       });
       setReadMessage(extracted.texteTrouve
-        ? `${extracted.lignes?.length || 0} ligne(s) extraite(s). Vérifie les informations détectées avant l’enregistrement. Le statut initial est « En cours ».${numberAlreadyUsed ? ` Le numéro ${extracted.numero} existe déjà : ${suggestedNumber} a été proposé. Le PDF original reste inchangé.` : ""}`
+        ? `${extracted.lignes?.length || 0} ligne(s) détaillée(s) extraite(s).${extracted.lignes?.length ? "" : extracted.montantHT ? " Le tableau reprend le montant HT total, mais pas les lignes détaillées : vérifie-le avec le PDF." : " Aucune ligne ni total HT n’a pu être détecté : complète le tableau à partir du PDF."} Vérifie les informations avant l’enregistrement. Le statut initial est « En cours ».${numberAlreadyUsed ? ` Le numéro ${extracted.numero} existe déjà : ${suggestedNumber} a été proposé. Le PDF original reste inchangé.` : ""}`
         : "Aucun texte détecté dans ce PDF. Il est probablement scanné : complète les champs manuellement. Le statut initial est « En cours ».");
     } catch (e) {
       console.error(e);

@@ -95,12 +95,12 @@ function extractTableRows(items) {
   let columns = null;
   for (const row of rows) {
     const text = normalizeText(row.parts.map((part) => part.text).join(" "));
-    if (/\bdesignation\b/.test(text) && /\bqte\b/.test(text) && /\bunite\b/.test(text) && /\bremise\b/.test(text) && /\btva\b/.test(text)) {
+    if (/\bdesignation\b/.test(text) && /\b(?:qte|quantite)\b/.test(text) && /\b(?:pu|prix unitaire)\b/.test(text)) {
       const aliases = [
         ["designation", /\bdesignation\b/],
         ["qte", /\bqte\b|quantite/],
         ["unite", /\bunite\b/],
-        ["pu", /\bpu\b/],
+        ["pu", /\bpu\b|prix unitaire/],
         ["remise", /\bremise\b/],
         ["tva", /\btva\b/],
         ["ht", /total ht/],
@@ -116,7 +116,7 @@ function extractTableRows(items) {
       }
     }
     if (!columns) continue;
-    if (/\btotal ht brut\b|\btotal ttc\b|\bconditions generales\b|\bmodalites de paiement\b/.test(text)) {
+    if (/\btotal(?: general)? ht\b|\btotal ttc\b|\bconditions generales\b|\bmodalites de paiement\b/.test(text)) {
       columns = null;
       continue;
     }
@@ -129,7 +129,7 @@ function extractTableRows(items) {
     }
     const cell = (key) => (cells[key] || []).join(" ").replace(/\s+/g, " ").trim();
     const quantity = cell("qte").replace(",", ".");
-    const unit = cell("unite").toLowerCase();
+    const unit = cell("unite").toLowerCase() || "u";
     const pu = money(cell("pu"));
     const designation = cell("designation");
     const isDataRow = /^\d+(?:\.\d+)?$/.test(quantity) && Boolean(unit) && Boolean(pu);
