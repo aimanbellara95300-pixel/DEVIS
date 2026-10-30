@@ -54,9 +54,21 @@ function isoDate(value) {
 }
 
 function findNumber(text) {
-  const match = /\b(?:devis|quote)\s*n\s*[°ºo.]\s*[:#-]?\s*([A-Z0-9][A-Z0-9/_-]{1,})/i.exec(text)
-    || /\bn\s*[°ºo.]\s*[:#-]?\s*(D[-_/]\d{4}[-_/]\d{3,})/i.exec(text);
-  return match?.[1] || "";
+  // Chercher différents formats de numéros de devis
+  const patterns = [
+    /\b(?:devis|quote)\s*n\s*[°ºo.]\s*[:#-]?\s*([A-Z0-9][A-Z0-9/_-]{1,})/i,
+    /\bn\s*[°ºo.]\s*[:#-]?\s*(D[-_/]\d{4}[-_/]\d{3,})/i,
+    /\bdevis\s*[:#-]?\s*([A-Z0-9]+-\d{4}-\d{3,})/i,
+    /\bnumero\s*(?:de\s*)?devis\s*[:#-]?\s*([A-Z0-9][A-Z0-9/_-]+)/i,
+    /\b(D-\d{4}-\d{3,})\b/i
+  ];
+  
+  for (const pattern of patterns) {
+    const match = pattern.exec(text);
+    if (match?.[1]) return match[1];
+  }
+  
+  return "";
 }
 
 function extractTotals(lines) {
@@ -176,17 +188,55 @@ function extractTableRows(items) {
 }
 
 function extractClient(lines) {
+  // Chercher la section client dans tout le document, pas seulement à gauche
   const heading = lines.findIndex((line) => /\bclient\s+(particulier|professionnel|pro)\b/i.test(line));
   if (heading < 0) {
+    // Essayer de trouver un bloc client sans label explicite
+    // Chercher email, téléphone, SIRET comme indices
+    const emailLine = lines.findIndex((line) => /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(line));
+    const siretLine = lines.findIndex((line) => /\b(?:SIRET|TVA)\b.*\d{3}\s?\d{3}\s?\d{3}\s?\d{5}\b/i.test(line));
+    const start = Math.min(
+      emailLine >= 0 ? emailLine : Infinity,
+      siretLine >= 0 ? siretLine : Infinity
+    );
+    
+    if (start < Infinity) {
+      // Récupérer 5 lignes avant pour capturer nom/adresse
+      const begin = Math.max(0, start - 5);
+      const block = lines.slice(begin, start + 3);
+      
+      const email = block.join(" ").match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || "";
+      const tel = block.join(" ").match(/(?:\+?\d[\d\s()./-]{7,}\d)/)?.[0]?.trim() || "";
+      const siret = block.join(" ").match(/\b\d{3}\s?\d{3}\s?\d{3}\s?\d{5}\b/)?.[0] || "";
+      const postalCity = block.find((line) => /\b\d{5}\s+\D/.test(line)) || "";
+      const postalMatch = /\b(\d{5})\s+(.+)$/.exec(postalCity);
+      
+      return {
+        type: "particulier",
+        societe: "",
+        nom: "",
+        adresse: "",
+        cp: postalMatch?.[1] || "",
+        ville: postalMatch?.[2]?.trim() || "",
+        tel,
+        email,
+        siret
+      };
+    }
+    
     return { type: "particulier", societe: "", nom: "", adresse: "", cp: "", ville: "", tel: "", email: "", siret: "" };
   }
+  
   const isPro = heading >= 0 && /\b(?:professionnel|pro)\b/i.test(lines[heading]);
   const block = [];
   for (const line of lines.slice(heading + 1)) {
+    // Ignorer les lignes qui sont clairement de l'entreprise émettrice (Viviworks)
+    if (/\bviviworks\b/i.test(line)) continue;
     if (/^(?:objet|lieu d'intervention|d[ée]signation|qt[ée]|total ht)\b/i.test(line)) break;
-    if (block.length >= 8) break;
+    if (block.length >= 10) break;
     block.push(line);
   }
+  
   const email = block.join(" ").match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || "";
   const tel = block.join(" ").match(/(?:\+?\d[\d\s()./-]{7,}\d)/)?.[0]?.trim() || "";
   const siret = block.join(" ").match(/\b\d{3}\s?\d{3}\s?\d{3}\s?\d{5}\b/)?.[0] || "";
@@ -195,7 +245,8 @@ function extractClient(lines) {
   const clean = block.filter((line) =>
     !/@/.test(line) &&
     !/\b(?:t[ée]l|siret|TVA)\b/i.test(line) &&
-    !/^\d{4,5}\s+\D/.test(line)
+    !/^\d{4,5}\s+\D/.test(line) &&
+    !/\bviviworks\b/i.test(line)
   );
   const secondLineIsAddress = isPro && /^(?:\d+\s+)?(?:rue|r\.|avenue|av\.?|boulevard|bd\.?|impasse|chemin|route|place|all[ée]e|quai|cours|passage|résidence|residence)\b/i.test(clean[1] || "");
   const societe = isPro ? clean[0] || "" : "";
@@ -249,25 +300,51 @@ function extractObject(items, lines) {
 export async function extractArchivePdf(file) {
   const pdf = await loadPdf(new Uint8Array(await file.arrayBuffer()));
   const allLines = [];
-  const leftLines = [];
+  const allItems = [];
   const tablePages = [];
   const pages = Array.from({ length: pdf.numPages }, (_, index) => index + 1);
+  
+  console.log("=== DÉBUT EXTRACTION PDF ===");
+  console.log(`Nombre de pages: ${pdf.numPages}`);
+  
   for (const pageNum of pages) {
     const page = await pdf.getPage(pageNum);
     const content = await page.getTextContent();
     const width = page.getViewport({ scale: 1 }).width;
-    allLines.push(...linesFrom(content.items, width));
-    leftLines.push(...linesFrom(content.items, width * 0.5));
+    const pageLines = linesFrom(content.items, width);
+    allLines.push(...pageLines);
+    allItems.push(...content.items);
     tablePages.push(content.items);
+    
+    console.log(`Page ${pageNum}: ${pageLines.length} lignes extraites`);
+    if (pageNum === 1) {
+      console.log("Premières lignes de la page 1:", pageLines.slice(0, 15));
+    }
   }
+  
   const allText = allLines.join("\n");
+  console.log("Texte total extrait (500 premiers caractères):", allText.substring(0, 500));
+  
+  // Extraction des informations - utiliser allLines au lieu de leftLines
   const totals = extractTotals(allLines);
-  const client = extractClient(leftLines);
+  console.log("Totaux extraits:", totals);
+  
+  const client = extractClient(allLines);
+  console.log("Client extrait:", client);
+  
   const inferredTva = totals.tva || (totals.ht && totals.ttc
     ? ["20", "10", "5.5", "0"].find((rate) => Math.abs(Number(totals.ht) * (1 + Number(rate) / 100) - Number(totals.ttc)) < 0.03) || "20"
     : "20");
+  console.log("TVA déduite:", inferredTva);
+  
   const object = extractObject(tablePages[0] || [], allLines);
+  console.log("Objet extrait:", object);
+  
   const dateLine = allLines.find((line) => /\bdate\b/i.test(line)) || "";
+  const extractedDate = isoDate(dateLine) || isoDate(allText);
+  console.log("Date ligne:", dateLine);
+  console.log("Date extraite:", extractedDate);
+  
   const categoryText = object || allLines.join(" ");
   const categorie = /\b(?:d[ée]pannage|r[ée]paration)\b/i.test(categoryText)
     ? "depannage"
@@ -276,21 +353,36 @@ export async function extractArchivePdf(file) {
       : /\binstallation\b/i.test(categoryText)
         ? "installation"
         : "";
+  console.log("Catégorie détectée:", categorie);
+  
   const lignes = tablePages.flatMap((items) => extractTableRows(items));
+  console.log(`Lignes de tableau extraites: ${lignes.length}`);
+  lignes.forEach((ligne, i) => {
+    console.log(`Ligne ${i + 1}:`, ligne);
+  });
+  
   const amountFromLines = lignes.reduce((total, line) => total + lineHT(line), 0);
   const montantHT = totals.ht || (totals.ttc
     ? (Number(totals.ttc) / (1 + Number(inferredTva) / 100)).toFixed(2)
     : amountFromLines ? amountFromLines.toFixed(2) : "");
+  console.log("Montant HT final:", montantHT);
+  
+  const numeroExtracted = findNumber(allText);
+  console.log("Numéro extrait:", numeroExtracted);
+  
   const acompteText = allLines.find((line) => /\bacompte\b.*\d+(?:[,.]\d+)?\s*%/i.test(line)) || "";
   const acompte = /\bacompte\b.*?(\d+(?:[,.]\d+)?)\s*%/i.exec(acompteText)?.[1]?.replace(",", ".") || "";
+  console.log("Acompte extrait:", acompte);
+  
   const acompteIndex = allLines.indexOf(acompteText);
   const conditionsIndex = allLines.findIndex((line, index) => index > acompteIndex && /\bconditions generales\b|\bmodalites de paiement\b/.test(normalizeText(line)));
   const notes = acompteIndex >= 0 && conditionsIndex > acompteIndex
     ? allLines.slice(acompteIndex + 1, conditionsIndex).filter((line) => !/\b(?:total|net a payer)\b/i.test(line)).join("\n").trim()
     : "";
-  return {
-    numero: findNumber(allText),
-    date: isoDate(dateLine) || isoDate(allText),
+  
+  const result = {
+    numero: numeroExtracted,
+    date: extractedDate,
     objet: object,
     montantHT,
     tva: inferredTva,
@@ -301,4 +393,9 @@ export async function extractArchivePdf(file) {
     ...client,
     texteTrouve: allLines.length > 0
   };
+  
+  console.log("=== RÉSULTAT FINAL ===", result);
+  console.log("=== FIN EXTRACTION PDF ===");
+  
+  return result;
 }
