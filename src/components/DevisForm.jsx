@@ -113,6 +113,9 @@ export default function DevisForm() {
             ))}
           </select>
         </label>
+        <p className="muted" style={{ marginTop: -4 }}>
+          Choisir un client préremplit un nouveau devis. Pour consulter un ancien devis, ouvre « Suivi » puis « Aperçu du PDF original ».
+        </p>
         <h3 style={{ marginTop: 4 }}>Type de client</h3>
         <div className="seg">
           <button type="button" aria-pressed={d.type === "particulier"} onClick={() => app.setType("particulier")}>Particulier</button>

@@ -609,6 +609,20 @@ export function AppProvider({ children }) {
     }
   }, [toast]);
 
+  const previewArchivePdf = useCallback(async (d) => {
+    if (!d?.archive?.pdfPath) return toast("Aucun PDF original n'est associé à ce devis.");
+    const title = `PDF original · Devis ${d.numero}`;
+    setViewer({ title, loading: true, bytes: null, d, mode: "archive", error: "" });
+    try {
+      const blob = await dbGetArchivePdf(d.archive.pdfPath);
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      setViewer({ title, loading: false, bytes, d, mode: "archive", error: "" });
+    } catch (e) {
+      console.error(e);
+      setViewer({ title, loading: false, bytes: null, d, mode: "archive", error: e.message || "L'aperçu du PDF original a échoué." });
+    }
+  }, [toast]);
+
   const ficheBytes = useCallback(async (f) => dbFicheBytes(f), []);
 
   const makeBytes = useCallback(async (d, mode) => {
@@ -892,7 +906,7 @@ export function AppProvider({ children }) {
     ready, authReady, configured: isSupabaseConfigured(), session, settings, devisList, clients, fiches, cur, tab, suiviCat, suiviSt, factF, cliFilter, cliSearch, cliOpen,
     save, toastMsg, photoStatus, scanStatus, busy, viewer, signIn, signUp, signOut,
     showTab, newDevis, newDevisForClient, openDevis, duplicate, erase, saveNow, touch, setType, setTvaAll, pickClient, setStatut,
-    importArchive, downloadArchivePdf,
+    importArchive, downloadArchivePdf, previewArchivePdf,
     setSuiviSt, setFactF, setCliFilter, setCliSearch, setCliOpen, addFiches, delFiche, saveSettings, pickColor,
     onOfferFile, onScanFile, preview, download, exportCurrent, closeViewer: () => setViewer(null),
     defaultMail, sendDossier, saveClientNotes, deleteClient, setPayee, applyAllMarge, applyMarge
@@ -900,7 +914,7 @@ export function AppProvider({ children }) {
     ready, authReady, session, settings, devisList, clients, fiches, cur, tab, suiviCat, suiviSt, factF, cliFilter, cliSearch, cliOpen,
     save, toastMsg, photoStatus, scanStatus, busy, viewer, signIn, signUp, signOut,
     showTab, newDevis, newDevisForClient, openDevis, duplicate, erase, saveNow, touch, setType, setTvaAll, pickClient, setStatut,
-    importArchive, downloadArchivePdf,
+    importArchive, downloadArchivePdf, previewArchivePdf,
     addFiches, delFiche, saveSettings, pickColor, onOfferFile, onScanFile, preview, download, exportCurrent,
     defaultMail, sendDossier, saveClientNotes, deleteClient, setPayee, applyAllMarge
   ]);

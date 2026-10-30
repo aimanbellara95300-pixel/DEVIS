@@ -74,7 +74,10 @@ export default function Clients() {
                       <div className="meta" key={d.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "4px 0" }}>
                         <span>{d.numero} · {CATS[d.categorie]} · {frDate(d.date)} <span className={"st " + d.statut}>{STATUTS[d.statut]}</span></span>
                         {d.archive
-                          ? <button className="btn ghost" onClick={() => app.downloadArchivePdf(d)}>PDF original</button>
+                          ? <span className="actions" style={{ flexWrap: "wrap", justifyContent: "flex-end" }}>
+                              <button className="btn ghost" onClick={() => app.previewArchivePdf(d)}>Aperçu original</button>
+                              <button className="btn ghost" onClick={() => app.downloadArchivePdf(d)}>Télécharger original</button>
+                            </span>
                           : <button className="btn ghost" onClick={() => app.openDevis(d.id)}>Ouvrir</button>}
                       </div>
                     )) : <p className="empty">Aucun devis lié.</p>}

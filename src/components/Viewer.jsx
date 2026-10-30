@@ -68,7 +68,13 @@ export default function Viewer() {
       <div className="vbar">
         <strong>{v.title}</strong>
         <div className="actions" style={{ flexWrap: "nowrap" }}>
-          <button className="btn primary" type="button" onClick={() => v.d && app.download(v.d, v.mode)}>Télécharger</button>
+          <button
+            className="btn primary"
+            type="button"
+            onClick={() => v.d && (v.mode === "archive" ? app.downloadArchivePdf(v.d) : app.download(v.d, v.mode))}
+          >
+            {v.mode === "archive" ? "Télécharger l’original" : "Télécharger"}
+          </button>
           <button className="btn" type="button" onClick={app.closeViewer}>Fermer</button>
         </div>
       </div>
