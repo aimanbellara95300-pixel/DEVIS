@@ -34,10 +34,16 @@ export default function ArchiveImport({ onClose }) {
   const app = useApp();
   const [values, setValues] = useState(() => emptyValues(app));
   const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
+  const [fileIndex, setFileIndex] = useState(0);
+  const [savedCount, setSavedCount] = useState(0);
+  const [duplicateCount, setDuplicateCount] = useState(0);
+  const [completed, setCompleted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [reading, setReading] = useState(false);
   const [readMessage, setReadMessage] = useState("");
   const readId = useRef(0);
+  const importedDevis = useRef([]);
   const set = (key, value) => setValues((current) => ({ ...current, [key]: value }));
   const setLine = (index, key, value) => setValues((current) => ({
     ...current,
@@ -46,9 +52,10 @@ export default function ArchiveImport({ onClose }) {
   const lignesHT = values.lignes.reduce((total, line) => total + lineHT(line), 0);
   const totalMismatch = values.lignes.length > 0 &&
     Math.abs(lignesHT - Number(String(values.montantHT).replace(",", "."))) > 0.02;
-  const selectPdf = async (selected) => {
+  const loadPdf = async (selected, index) => {
     const id = ++readId.current;
     setFile(selected);
+    setFileIndex(index);
     setReadMessage("");
     if (!selected) {
       setReading(false);
@@ -61,10 +68,11 @@ export default function ArchiveImport({ onClose }) {
     try {
       const extracted = await extractArchivePdf(selected);
       if (id !== readId.current) return;
-      const numberAlreadyUsed = Boolean(extracted.numero) && app.devisList.some(
+      const currentDevis = app.devisList.concat(importedDevis.current);
+      const numberAlreadyUsed = Boolean(extracted.numero) && currentDevis.some(
         (devis) => String(devis.numero).trim().toLowerCase() === extracted.numero.trim().toLowerCase()
       );
-      const suggestedNumber = numberAlreadyUsed ? nextNumber(app.devisList) : extracted.numero;
+      const suggestedNumber = numberAlreadyUsed ? nextNumber(currentDevis) : extracted.numero;
       const lignes = extracted.lignes?.length
         ? extracted.lignes
         : extracted.montantHT
@@ -100,24 +108,110 @@ export default function ArchiveImport({ onClose }) {
       if (id === readId.current) setReading(false);
     }
   };
+  const selectPdfs = async (selection) => {
+    const selected = Array.from(selection || []);
+    setSavedCount(0);
+    setDuplicateCount(0);
+    setCompleted(false);
+    setFiles([]);
+    setFile(null);
+    setReadMessage("");
+    setValues(emptyValues(app));
+    if (!selected.length) {
+      setReading(false);
+      setValues(emptyValues(app));
+      return;
+    }
+    const invalid = selected.find((candidate) =>
+      !/\.pdf$/i.test(candidate.name) ||
+      (candidate.type && candidate.type !== "application/pdf") ||
+      candidate.size > 20 * 1048576
+    );
+    if (invalid) {
+      setReadMessage(
+        !/\.pdf$/i.test(invalid.name) || (invalid.type && invalid.type !== "application/pdf")
+          ? `${invalid.name} n’est pas un PDF valide.`
+          : `${invalid.name} dépasse la limite de 20 Mo.`
+      );
+      setReading(false);
+      return;
+    }
+
+    setReading(true);
+    try {
+      if (selected.length === 1) {
+        setFiles(selected);
+        await loadPdf(selected[0], 0);
+        return;
+      }
+      const unique = [];
+      const hashes = new Set();
+      for (const candidate of selected) {
+        const digest = await window.crypto.subtle.digest("SHA-256", await candidate.arrayBuffer());
+        const hash = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+        if (!hashes.has(hash)) {
+          hashes.add(hash);
+          unique.push(candidate);
+        }
+      }
+      const duplicates = selected.length - unique.length;
+      setFiles(unique);
+      setDuplicateCount(duplicates);
+      await loadPdf(unique[0], 0);
+    } catch (e) {
+      console.error(e);
+      setReadMessage("Impossible de vérifier les fichiers sélectionnés. Réessaie avec un navigateur récent.");
+      setReading(false);
+    }
+  };
+  const saveCurrent = async (event) => {
+    event.preventDefault();
+    if (!file || busy || reading) return;
+    setBusy(true);
+    let saved = false;
+    try {
+      saved = await app.importArchive(values, file);
+    } finally {
+      setBusy(false);
+    }
+    if (!saved) return;
+
+    importedDevis.current.push({ numero: values.numero });
+    setSavedCount((count) => count + 1);
+    const nextIndex = fileIndex + 1;
+    if (nextIndex < files.length) {
+      await loadPdf(files[nextIndex], nextIndex);
+    } else {
+      setCompleted(true);
+      setFile(null);
+    }
+  };
 
   return (
     <div className="card">
-      <h2>Enregistrer un ancien devis</h2>
+      <h2>Enregistrer des anciens devis</h2>
       <p className="muted" style={{ marginTop: -6 }}>
-        Sélectionne le PDF : les informations reconnues seront préremplies. Vérifie-les, complète ce qui manque, puis enregistre le devis et le client.
+        Sélectionne un ou plusieurs PDF. Vérifie les informations reconnues pour chaque devis avant de l’enregistrer avec son client.
       </p>
-      <form onSubmit={async (e) => {
-        e.preventDefault();
-        if (!file || busy) return;
-        setBusy(true);
-        const saved = await app.importArchive(values, file);
-        setBusy(false);
-        if (saved) onClose();
-      }}>
+      {files.length > 0 && !completed && (
+        <p className="muted" role="status">
+          Devis {fileIndex + 1} sur {files.length} · {savedCount} enregistré{savedCount > 1 ? "s" : ""}
+          {duplicateCount > 0 ? ` · ${duplicateCount} copie${duplicateCount > 1 ? "s" : ""} identique${duplicateCount > 1 ? "s" : ""} ignorée${duplicateCount > 1 ? "s" : ""}` : ""}
+        </p>
+      )}
+      {completed ? (
+        <>
+          <p role="status">
+            {savedCount} devis enregistré{savedCount > 1 ? "s" : ""} avec leur PDF original.
+            {duplicateCount > 0 ? ` ${duplicateCount} copie${duplicateCount > 1 ? "s" : ""} identique${duplicateCount > 1 ? "s" : ""} ignorée${duplicateCount > 1 ? "s" : ""}.` : ""}
+          </p>
+          <button className="btn primary" type="button" onClick={onClose}>Terminer</button>
+        </>
+      ) : (
+      <form onSubmit={saveCurrent}>
         <div className="grid">
           <label>PDF original
-            <input type="file" accept="application/pdf,.pdf" required onChange={(e) => selectPdf(e.target.files?.[0] || null)} />
+            <input type="file" accept="application/pdf,.pdf" multiple required onChange={(e) => selectPdfs(e.target.files)} />
           </label>
           <label>Numéro du devis
             <input required value={values.numero} onChange={(e) => set("numero", e.target.value)} />
@@ -239,10 +333,11 @@ export default function ArchiveImport({ onClose }) {
         {!reading && readMessage && <p className="muted" role="status">{readMessage}</p>}
         <p className="muted">PDF limité à 20 Mo. Le document est conservé dans l’espace privé de l’application.</p>
         <div className="actions">
-          <button className="btn primary" type="submit" disabled={busy || reading || !file}>{busy ? "Enregistrement…" : "Enregistrer le devis et le client"}</button>
+          <button className="btn primary" type="submit" disabled={busy || reading || !file}>{busy ? "Enregistrement…" : files.length > 1 ? "Enregistrer et passer au suivant" : "Enregistrer le devis et le client"}</button>
           <button className="btn" type="button" disabled={busy || reading} onClick={onClose}>Annuler</button>
         </div>
       </form>
+      )}
     </div>
   );
 }
