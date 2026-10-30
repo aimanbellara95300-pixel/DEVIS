@@ -3,6 +3,7 @@ import { eur } from "./lib/format.js";
 import { TABS } from "./lib/constants.js";
 import { useApp } from "./context/AppState.jsx";
 import AuthScreen from "./components/AuthScreen.jsx";
+import Sidebar from "./components/Sidebar.jsx";
 import DevisForm from "./components/DevisForm.jsx";
 import Suivi from "./components/Suivi.jsx";
 import Envoi from "./components/Envoi.jsx";
@@ -52,28 +53,24 @@ export default function App() {
   }
 
   return (
-    <>
-      <header>
-        <div className="bar">
-          <div className="brand">Devis <span>Viviworks</span></div>
-          <div className="mode">{app.ready ? app.session.user.email : "Chargement…"} <button className="btn ghost" type="button" onClick={app.signOut}>Sortir</button></div>
-        </div>
-        <nav role="tablist">
-          {TABS.map(([id, label]) => (
-            <button key={id} role="tab" aria-selected={selected(id)} onClick={() => app.showTab(NAV_TO[id])}>{label}</button>
-          ))}
-        </nav>
-      </header>
-      <main>
-        {!app.ready && <p className="muted">Chargement des devis…</p>}
-        {app.ready && app.tab === "devis" && <DevisForm />}
-        {app.ready && app.tab === "suivi" && <Suivi />}
-        {app.ready && app.tab === "envoi" && <Envoi />}
-        {app.ready && app.tab === "factures" && <Factures />}
-        {app.ready && app.tab === "clients" && <Clients />}
-        {app.ready && app.tab === "fiches" && <Fiches />}
-        {app.ready && app.tab === "reglages" && <Reglages />}
-      </main>
+    <div className="app-container">
+      <Sidebar 
+        selected={selected}
+        onNavigate={(id) => app.showTab(NAV_TO[id])}
+        userEmail={app.ready ? app.session.user.email : "Chargement…"}
+        onSignOut={app.signOut}
+      />
+      <div className="main-content">
+        <main>
+          {!app.ready && <p className="muted">Chargement des devis…</p>}
+          {app.ready && app.tab === "devis" && <DevisForm />}
+          {app.ready && app.tab === "suivi" && <Suivi />}
+          {app.ready && app.tab === "envoi" && <Envoi />}
+          {app.ready && app.tab === "factures" && <Factures />}
+          {app.ready && app.tab === "clients" && <Clients />}
+          {app.ready && app.tab === "fiches" && <Fiches />}
+          {app.ready && app.tab === "reglages" && <Reglages />}
+        </main>
       {app.tab === "devis" && app.cur && (
         <div className="dock">
           <div className="in">
@@ -88,8 +85,23 @@ export default function App() {
           </div>
         </div>
       )}
-      {app.toastMsg && <div className="toast on" role="status">{app.toastMsg}</div>}
-      {app.viewer && <Viewer />}
-    </>
+        {app.tab === "devis" && app.cur && (
+          <div className="dock">
+            <div className="in">
+              <div className="sum">Total TTC<b>{eur(ttc)}</b></div>
+              <div className={"savestate " + app.save.kind} aria-live="polite">{app.save.text}</div>
+            </div>
+            <div className="btns">
+              <button className="btn" type="button" onClick={app.saveNow}>Enregistrer</button>
+              <button className="btn danger" type="button" onClick={() => app.erase(app.cur.id)}>Effacer</button>
+              <button className="btn" type="button" onClick={() => app.preview(app.cur, "devis")}>Aperçu</button>
+              <button className="btn primary" type="button" onClick={() => app.exportCurrent("devis")}>PDF</button>
+            </div>
+          </div>
+        )}
+        {app.toastMsg && <div className="toast on" role="status">{app.toastMsg}</div>}
+        {app.viewer && <Viewer />}
+      </div>
+    </div>
   );
 }
