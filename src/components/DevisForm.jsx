@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { COULEURS, EXP_CATS, MARGES, TVA_OPTIONS, TVAS, UNITES } from "../lib/constants.js";
-import { achatHT, blankLine, compute, lineHT, lineMarge, realMargin } from "../lib/calc.js";
-import { cliName } from "../lib/calc.js";
-import { eur, num, pct, today, uid } from "../lib/format.js";
+import { achatHT, blankLine, clientNom, cliName, compute, lineHT, lineMarge, realMargin } from "../lib/calc.js";
+import { eur, frDate, num, pct, today, uid } from "../lib/format.js";
 import { useApp } from "../context/AppState.jsx";
 
 function PasteZone({ target, onFile }) {
@@ -91,6 +90,9 @@ export default function DevisForm() {
   if (!d) return null;
   const t = compute(d);
   const brands = [...new Set(app.fiches.map((f) => f.marque))].sort((a, b) => a.localeCompare(b, "fr"));
+  const savedDevis = [...app.devisList].sort((a, b) =>
+    (b.date || "").localeCompare(a.date || "") || (b.numero || "").localeCompare(a.numero || "")
+  );
   const bought = d.lignes.filter((l) => num(l.achat) > 0);
   const ach = bought.reduce((a, l) => a + achatHT(l) * num(l.qte), 0);
   const mg = bought.reduce((a, l) => a + lineMarge(l), 0);
@@ -105,6 +107,20 @@ export default function DevisForm() {
       <div className="card">
         <h2>Client</h2>
         <label style={{ marginBottom: 12 }}>
+          Ouvrir un devis enregistré
+          <select
+            value={app.devisList.some((devis) => devis.id === d.id) ? d.id : ""}
+            onChange={(e) => { if (e.target.value) app.openDevis(e.target.value); }}
+          >
+            <option value="">Choisir un devis enregistré</option>
+            {savedDevis.map((devis) => (
+              <option key={devis.id} value={devis.id}>
+                {devis.numero} · {clientNom(devis)} · {frDate(devis.date)}{devis.archive ? " · PDF archivé" : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label style={{ marginBottom: 12 }}>
           Reprendre un client enregistré
           <select value={app.clients.some((c) => c.id === d.clientId) ? d.clientId : ""} onChange={(e) => app.pickClient(e.target.value)}>
             <option value="">Nouveau client</option>
@@ -114,8 +130,16 @@ export default function DevisForm() {
           </select>
         </label>
         <p className="muted" style={{ marginTop: -4 }}>
-          Choisir un client préremplit un nouveau devis. Pour consulter un ancien devis, ouvre « Suivi » puis « Aperçu du PDF original ».
+          Choisir un client préremplit un nouveau devis. Pour reprendre un devis existant, sélectionne-le dans la liste ci-dessus.
         </p>
+        {d.archive && (
+          <div className="notice">
+            Ce devis archivé est modifiable. Enregistre les changements pour conserver ses informations et ses lignes ; « Aperçu » affiche le devis régénéré. Le PDF original reste inchangé.
+            <button className="btn ghost" type="button" style={{ marginTop: 8 }} onClick={() => app.previewArchivePdf(d)}>
+              Afficher le PDF original
+            </button>
+          </div>
+        )}
         <h3 style={{ marginTop: 4 }}>Type de client</h3>
         <div className="seg">
           <button type="button" aria-pressed={d.type === "particulier"} onClick={() => app.setType("particulier")}>Particulier</button>

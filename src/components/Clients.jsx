@@ -75,6 +75,7 @@ export default function Clients() {
                         <span>{d.numero} · {CATS[d.categorie]} · {frDate(d.date)} <span className={"st " + d.statut}>{STATUTS[d.statut]}</span></span>
                         {d.archive
                           ? <span className="actions" style={{ flexWrap: "wrap", justifyContent: "flex-end" }}>
+                              <button className="btn ghost" onClick={() => app.openDevis(d.id)}>Modifier</button>
                               <button className="btn ghost" onClick={() => app.previewArchivePdf(d)}>Aperçu original</button>
                               <button className="btn ghost" onClick={() => app.downloadArchivePdf(d)}>Télécharger original</button>
                             </span>

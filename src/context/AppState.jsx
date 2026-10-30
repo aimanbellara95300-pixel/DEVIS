@@ -318,14 +318,13 @@ export function AppProvider({ children }) {
       d.lignes.forEach((l) => { l.tva = 20; });
     }
     curRef.current = d;
-    dirtyRef.current = true;
+    dirtyRef.current = false;
     setCur(d);
-    setSave({ kind: "dirty", text: "Modifications non enregistrées" });
+    setSave({ kind: "", text: "Pas encore enregistré" });
     setTab("devis");
     window.scrollTo(0, 0);
     toast(`Nouveau devis pour ${cliName(c)}.`);
-    scheduleSave();
-  }, [persistCur, scheduleSave, toast]);
+  }, [persistCur, toast]);
 
   const openDevis = useCallback(async (id, opts = {}) => {
     if (dirtyRef.current && hasContent(curRef.current)) await persistCur().catch(() => {});

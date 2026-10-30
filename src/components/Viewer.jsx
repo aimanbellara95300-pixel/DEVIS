@@ -13,6 +13,7 @@ export default function Viewer() {
   useEffect(() => {
     if (!v?.bytes) return;
     let cancel = false;
+    if (pagesRef.current) pagesRef.current.scrollTop = 0;
     (async () => {
       const pdf = await loadPdf(new Uint8Array(v.bytes));
       if (cancel) return;

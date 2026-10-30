@@ -72,6 +72,7 @@ export default function Suivi() {
                   </label>
                 </div>
                 <div className="actions" style={{ flexDirection: "column", alignItems: "flex-end" }}>
+                  {d.archive && <button className="btn ghost" onClick={() => app.openDevis(d.id)}>Modifier le devis</button>}
                   {d.archive && <button className="btn ghost" onClick={() => app.previewArchivePdf(d)}>Aperçu du PDF original</button>}
                   {d.archive && <button className="btn ghost" onClick={() => app.downloadArchivePdf(d)}>Télécharger le PDF original</button>}
                   {!d.archive && <button className="btn ghost" onClick={() => app.openDevis(d.id)}>Ouvrir</button>}

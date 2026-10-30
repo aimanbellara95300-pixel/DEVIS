@@ -110,7 +110,7 @@ export function ensureFacture(d, devisList) {
 export function hasContent(cur) {
   return !!(
     cur &&
-    (cur.client?.nom || cur.client?.societe || cur.objet || cur.lignes?.some((l) => l.designation || num(l.pu)) || cur.depenses?.length)
+    (cur.objet || cur.lignes?.some((l) => l.designation || num(l.pu)) || cur.depenses?.length)
   );
 }
 
