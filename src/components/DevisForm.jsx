@@ -135,9 +135,14 @@ export default function DevisForm() {
         {d.archive && (
           <div className="notice">
             Ce devis archivé est modifiable. Enregistre les changements pour conserver ses informations et ses lignes ; « Aperçu » affiche le devis régénéré. Le PDF original reste inchangé.
-            <button className="btn ghost" type="button" style={{ marginTop: 8 }} onClick={() => app.previewArchivePdf(d)}>
-              Afficher le PDF original
-            </button>
+            <div className="actions" style={{ marginTop: 8 }}>
+              <button className="btn primary" type="button" onClick={() => app.preview(d, "devis")}>
+                Aperçu du devis régénéré
+              </button>
+              <button className="btn ghost" type="button" onClick={() => app.previewArchivePdf(d)}>
+                Afficher le PDF original
+              </button>
+            </div>
           </div>
         )}
         <h3 style={{ marginTop: 4 }}>Type de client</h3>

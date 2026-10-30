@@ -73,13 +73,41 @@ export function buildPdf(d, s, mode) {
     c.email,
     !part && c.siret ? "SIRET / TVA : " + c.siret : null
   ].filter(Boolean);
-  const boxH = 10 + cl.length * 4.4;
   const boxW = 92;
+  const clientLines = cl.map((line, i) => {
+    doc.setFont("helvetica", i === 0 ? "bold" : "normal");
+    doc.setFontSize(9);
+    const text = String(line).replace(/[\u00a0\u202f]/g, " ");
+    const wrapped = doc.splitTextToSize(text, boxW - 8);
+    return wrapped.flatMap((part) => {
+      if (doc.getTextWidth(part) <= boxW - 8) return [part];
+
+      const lines = [];
+      let current = "";
+      for (const character of part) {
+        if (current && doc.getTextWidth(current + character) > boxW - 8) {
+          lines.push(current);
+          current = "";
+        }
+        current += character;
+      }
+      if (current) lines.push(current);
+      return lines;
+    });
+  });
+  const clientLineCount = clientLines.reduce((count, lines) => count + lines.length, 0);
+  const boxH = 10 + clientLineCount * 4.4;
   doc.setDrawColor(...BLUE);
   doc.setLineWidth(0.6);
   doc.roundedRect(M, y, boxW, boxH, 1.5, 1.5);
   txt(part ? "CLIENT PARTICULIER" : "CLIENT PROFESSIONNEL", M + 4, y + 5.5, { b: 1, size: 7.5, c: ACC });
-  cl.forEach((l, i) => txt(l, M + 4, y + 10.5 + i * 4.4, { b: i === 0, size: 9 }));
+  let clientLine = 0;
+  clientLines.forEach((lines, i) => {
+    lines.forEach((line) => {
+      txt(line, M + 4, y + 10.5 + clientLine * 4.4, { b: i === 0, size: 9 });
+      clientLine += 1;
+    });
+  });
   const rx = M + boxW + 8;
   const rw = W - M - rx - 8;
   const companyX = rx + 4;
